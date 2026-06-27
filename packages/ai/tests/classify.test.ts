@@ -21,4 +21,11 @@ describe("classify", () => {
     const r = classify({ title: "今日の日常ブログ" });
     expect(r.isAnimeNews).toBe(false);
   });
+  it("OP/ED 不命中英文单词内部（OPAQUE 不算主题歌）", () => {
+    const r = classify({ title: "「OPAQUE.CLIP」コラボ全10型登場" });
+    expect(r.isAnimeNews).toBe(false);
+  });
+  it("标准 OP 主题歌仍能命中", () => {
+    expect(classify({ title: "ノンクレジットOP 公開" }).category).toBe("theme_song_announced");
+  });
 });

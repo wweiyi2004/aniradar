@@ -19,10 +19,20 @@ const RULES: { keywords: string[]; category: EventCategory; confidence: number }
   { keywords: ["主題歌", "OP", "ED"], category: "theme_song_announced", confidence: 0.8 },
 ];
 
+// 拉丁字母关键词（OP/ED/PV/CM）需词边界匹配，避免命中英文单词内部
+// （如 "OP" 命中 "OPAQUE"、"ED" 命中 "LIMITED"）。日文关键词用子串匹配。
+function matchesKeyword(text: string, kw: string): boolean {
+  if (/^[A-Za-z]+$/.test(kw)) {
+    const re = new RegExp(`(^|[^A-Za-z])${kw}([^A-Za-z]|$)`);
+    return re.test(text);
+  }
+  return text.includes(kw);
+}
+
 export function classify(input: { title: string; summary?: string; rawText?: string }): ClassifyResult {
   const text = `${input.title}\n${input.summary ?? ""}\n${input.rawText ?? ""}`;
   for (const rule of RULES) {
-    if (rule.keywords.some((k) => text.includes(k))) {
+    if (rule.keywords.some((k) => matchesKeyword(text, k))) {
       return { isAnimeNews: true, category: rule.category, confidence: rule.confidence };
     }
   }
