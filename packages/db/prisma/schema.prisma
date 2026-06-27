@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SourceType {
+  official_news
+  youtube_rss
+  press
+  media
+  company_news
+  publisher_news
+}
+
+enum SourceLevel {
+  S
+  A
+  B
+  C
+}
+
+enum FetchStrategy {
+  rss
+  youtube_rss
+  html_list
+  page_diff
+}
+
+enum PublishedTimePrecision {
+  datetime
+  date_only
+  unknown
+}
+
+enum SignalStatus {
+  raw
+  classified
+  ignored
+  merged
+  failed
+}
+
+enum EventCategory {
+  anime_adaptation
+  sequel_announced
+  pv_released
+  key_visual_released
+  cast_announced
+  staff_announced
+  broadcast_date_announced
+  delay_announced
+  movie_announced
+  theme_song_announced
+  event_info
+  merch_release
+  bd_release
+  other
+}
+
+enum EventStatus {
+  draft_ai
+  auto_published
+  published
+  needs_review
+  ignored
+  merged
+  retracted
+}
+
+enum FetchLogStatus {
+  success
+  failed
+  skipped
+}
+
+model Source {
+  id               String        @id @default(cuid())
+  name             String
+  url              String
+  type             SourceType
+  level            SourceLevel   @default(B)
+  fetchStrategy    FetchStrategy
+  enabled          Boolean       @default(true)
+  fetchIntervalSec Int           @default(900)
+  lastCheckedAt    DateTime?
+  lastSuccessAt    DateTime?
+  failureCount     Int           @default(0)
+  etag             String?
+  lastModified     String?
+  lastSeenHash     String?
+  selectorConfig   Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  signals          Signal[]
+  fetchLogs        FetchLog[]
+}
+
+model Signal {
+  id                     String                 @id @default(cuid())
+  sourceId               String
+  source                 Source                 @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  title                  String
+  url                    String
+  rawText                String?
+  summary                String?
+  publishedAt            DateTime?
+  publishedTimePrecision PublishedTimePrecision @default(unknown)
+  firstSeenAt            DateTime               @default(now())
+  hash                   String                 @unique
+  language               String?
+  status                 SignalStatus           @default(raw)
+  eventId                String?
+  event                  Event?                 @relation(fields: [eventId], references: [id])
+  createdAt              DateTime               @default(now())
+
+  @@index([sourceId])
+  @@index([status])
+}
+
+model Event {
+  id                String        @id @default(cuid())
+  title             String
+  titleZh           String?
+  summaryZh         String?
+  category          EventCategory
+  firstSeenAt       DateTime      @default(now())
+  confidence        Float         @default(0)
+  heatScore         Float         @default(0)
+  officialConfirmed Boolean       @default(false)
+  status            EventStatus   @default(draft_ai)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  signals           Signal[]
+
+  @@index([status])
+  @@index([category])
+  @@index([firstSeenAt])
+}
+
+model FetchLog {
+  id           String         @id @default(cuid())
+  sourceId     String
+  source       Source         @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  status       FetchLogStatus
+  message      String?
+  fetchedCount Int            @default(0)
+  newCount     Int            @default(0)
+  startedAt    DateTime       @default(now())
+  endedAt      DateTime?
+
+  @@index([sourceId])
+}

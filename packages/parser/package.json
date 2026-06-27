@@ -1,0 +1,12 @@
+{
+  "name": "@aniradar/parser",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@aniradar/shared": "workspace:*",
+    "rss-parser": "^3.13.0",
+    "cheerio": "^1.0.0"
+  }
+}
