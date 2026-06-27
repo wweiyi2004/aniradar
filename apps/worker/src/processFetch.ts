@@ -105,10 +105,15 @@ export async function processFetch(data: FetchJobData, ctx?: RetryCtx): Promise<
       where: { id: log.id },
       data: { status: "failed", message, endedAt: new Date() },
     });
+    // 每次尝试都刷新 lastCheckedAt：重试期间避免调度器把同一源判为"到期"而重复入队。
+    await prisma.source.update({
+      where: { id: source.id },
+      data: { lastCheckedAt: new Date() },
+    });
     if (shouldRetry(e, ctx)) throw e; // 瞬时网络错误交 BullMQ 重试
     await prisma.source.update({
       where: { id: source.id },
-      data: { lastCheckedAt: new Date(), failureCount: { increment: 1 } },
+      data: { failureCount: { increment: 1 } },
     });
   }
 }
