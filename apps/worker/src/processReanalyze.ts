@@ -1,6 +1,7 @@
 import { prisma } from "@aniradar/db";
 import { analyze } from "@aniradar/ai";
 import type { ReanalyzeJobData } from "@aniradar/shared";
+import { mergeFacts } from "./facts";
 import { shouldReanalyze } from "./reanalyzePlan";
 
 // AI 恢复后重分析：只升级译文/摘要，不改 category/heat/合并，保持幂等。
@@ -20,9 +21,15 @@ export async function processReanalyze(data: ReanalyzeJobData): Promise<void> {
     data: { titleZh: result.titleZh, aiSource: "ai" },
   });
   if (signal.eventId) {
+    const ev = await prisma.event.findUnique({ where: { id: signal.eventId }, select: { medium: true, facts: true } });
     await prisma.event.update({
       where: { id: signal.eventId },
-      data: { titleZh: result.titleZh, summaryZh: result.summaryZh },
+      data: {
+        titleZh: result.titleZh,
+        summaryZh: result.leadZh,
+        medium: ev?.medium ?? result.medium,
+        facts: mergeFacts(ev?.facts, result.facts) as object,
+      },
     });
   }
 }
