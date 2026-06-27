@@ -144,6 +144,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@aniradar/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@prisma/client':
         specifier: ^5.20.0
         version: 5.20.0(prisma@5.20.0)
