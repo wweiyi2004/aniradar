@@ -1,7 +1,10 @@
 import { prisma } from "@aniradar/db";
 import { classify, summarize } from "@aniradar/ai";
-import { buildEventFromSignal } from "@aniradar/detector";
+import { buildEventFromSignal, isSameEvent } from "@aniradar/detector";
 import type { ClassifyJobData } from "@aniradar/shared";
+
+// 合并时间窗：仅在最近这段时间内的同分类 Event 里寻找可合并目标。
+const MERGE_WINDOW_MS = 72 * 60 * 60 * 1000;
 
 export async function processClassify(data: ClassifyJobData): Promise<void> {
   const signal = await prisma.signal.findUnique({
@@ -29,11 +32,46 @@ export async function processClassify(data: ClassifyJobData): Promise<void> {
       firstSeenAt: signal.firstSeenAt,
       sourceType: signal.source.type,
     });
+
+    // 寻找可合并的既有 Event（最近窗口内、同分类、未被忽略/撤回/合并）。
+    const since = new Date(Date.now() - MERGE_WINDOW_MS);
+    const candidates = await prisma.event.findMany({
+      where: {
+        category: result.category,
+        firstSeenAt: { gte: since },
+        status: { notIn: ["ignored", "retracted", "merged"] },
+      },
+      orderBy: { firstSeenAt: "desc" },
+      take: 50,
+    });
+    const target = candidates.find((c) =>
+      isSameEvent({ title: c.title, category: c.category }, { title: signal.title, category: result.category }),
+    );
+
+    if (target) {
+      // 合并：挂到既有事件，累加热度，必要时提升官方确认/置信度/状态。
+      const upgradeToAuto = built.status === "auto_published" && target.status === "draft_ai";
+      await prisma.event.update({
+        where: { id: target.id },
+        data: {
+          heatScore: { increment: 1 },
+          officialConfirmed: target.officialConfirmed || built.officialConfirmed,
+          confidence: Math.max(target.confidence, built.confidence),
+          ...(upgradeToAuto ? { status: "auto_published" } : {}),
+        },
+      });
+      await prisma.signal.update({
+        where: { id: signal.id },
+        data: { status: "classified", eventId: target.id },
+      });
+      return;
+    }
+
+    // 无可合并目标：新建 Event。
     const { titleZh, summaryZh } = summarize({
       title: signal.title,
       summary: signal.summary ?? undefined,
     });
-
     const event = await prisma.event.create({
       data: {
         title: built.title,

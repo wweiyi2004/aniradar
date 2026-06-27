@@ -126,6 +126,7 @@ pnpm dev:web
 
 - 去重：`Signal.hash = sha256(sourceId + 归一化url + 归一化title)`，唯一约束，重复即跳过。
 - 排序核心：`Event.firstSeenAt` = 首个关联 Signal 的入库时间（"首次发现时间"）。
+- 事件合并：分类时在最近 72h 同分类 Event 中按"作品名（标题「」内）相同或标题相似度达阈值"寻找同一事件，命中则把新 Signal 挂到既有 Event 并累加 `heatScore`，否则新建。多源报道同一作品 → 聚合成一条（首页"来源 N">1）。
 
 ---
 
@@ -139,7 +140,7 @@ pnpm test    # 运行 parser / detector / ai 等纯逻辑单测（vitest）
 
 ## 下一步建议接入的真实 News 源
 
-第一阶段已内置 `アニメ！アニメ！`、`Anime News Network` 等 RSS 示例。建议后续按"官方/高时效"优先接入：
+已内置并实测可用的真实源：`アニメ！アニメ！`、`コミックナタリー`、`映画ナタリー`、`音楽ナタリー`（RSS）+ `アニプレックス`（YouTube RSS）。建议后续按"官方/高时效"继续扩充：
 
 **RSS / 官方新闻（最易接、时效高）**
 - アニメ！アニメ！(animeanime.jp) — 已内置，稳定可用
@@ -158,8 +159,11 @@ pnpm test    # 运行 parser / detector / ai 等纯逻辑单测（vitest）
 
 ---
 
-## 后续扩展点（已留接口，本期未实现）
+## 已实现的进阶能力
 
-- **事件合并**：`detector` 预留 `mergeIntoEvent` 思路——同主题多源 Signal 合并为单 Event 并累加 heatScore。
+- **事件合并**：见 `packages/detector/src/merge.ts`（`isSameEvent`/`extractWorkTitle`/`titleSimilarity`）+ `apps/worker/src/processClassify.ts`。同主题多源 Signal 合并为单 Event 并累加 heatScore（classify worker 并发设为 1 以避免合并竞态）。
+
+## 后续扩展点
+
 - **真实 AI**：替换 `packages/ai/src/classify.ts`、`summarize.ts` 内部实现（接口签名不变）即可接入大模型做分类与中文摘要/翻译。
-- **更多解析器**：官网 News 详情页结构化、X 监控、用户系统/评分（后续阶段）。
+- **更多解析器**：官网 News 详情页结构化、html_list/page_diff 真实站点接入、X 监控、用户系统/评分（后续阶段）。
