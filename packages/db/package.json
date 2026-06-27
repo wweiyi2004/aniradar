@@ -6,9 +6,9 @@
   "exports": { ".": "./src/index.ts" },
   "scripts": {
     "generate": "prisma generate",
-    "migrate": "prisma migrate dev --name init",
-    "seed": "tsx prisma/seed.ts",
-    "studio": "prisma studio"
+    "migrate": "dotenv -e ../../.env -- prisma migrate dev --name init",
+    "seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
+    "studio": "dotenv -e ../../.env -- prisma studio"
   },
   "dependencies": { "@prisma/client": "^5.20.0" },
   "devDependencies": { "prisma": "^5.20.0", "tsx": "^4.19.0" }
