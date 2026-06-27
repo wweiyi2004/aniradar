@@ -49,7 +49,7 @@ aniradar/
 | `@aniradar/crawler` | `fetchUrl`：超时、自定义 UA、etag/last-modified 条件请求、304 处理 |
 | `@aniradar/sources` | `SourceAdapter` 接口 + `RssAdapter`/`YouTubeRssAdapter`/`HtmlListAdapter`/`PageDiffAdapter` + `getAdapter` |
 | `@aniradar/detector` | `computeSignalHash`/`normalizeUrl`/`computeContentHash`、`buildEventFromSignal`（自动发布规则） |
-| `@aniradar/ai` | `classify`（关键词规则）、`summarize`（占位中文摘要），mock，接口稳定 |
+| `@aniradar/ai` | `analyze`（一次调用完成分类+日译中标题/摘要）：配置 `AI_API_KEY` 走 DeepSeek（OpenAI 兼容），未配置/失败自动回退 `classify`+`summarize` 规则 mock |
 
 ---
 
@@ -164,8 +164,10 @@ pnpm test    # 运行 parser / detector / ai 等纯逻辑单测（vitest）
 ## 已实现的进阶能力
 
 - **事件合并**：见 `packages/detector/src/merge.ts`（`isSameEvent`/`extractWorkTitle`/`titleSimilarity`）+ `apps/worker/src/processClassify.ts`。同主题多源 Signal 合并为单 Event 并累加 heatScore（classify worker 并发设为 1 以避免合并竞态）。
+- **真实 AI 分类/翻译**：`packages/ai/src/analyze.ts`。在 `.env` 配置 `AI_API_KEY`（默认 DeepSeek，`AI_BASE_URL`/`AI_MODEL` 可改成任意 OpenAI 兼容服务）后，每条情报一次调用得到「是否动漫情报 + 分类 + 置信度 + 简体中文标题/摘要」。**未配置 key 或调用失败时自动回退规则 mock**，项目始终可运行。DeepSeek 国内直连无需代理。
+- **首页多源聚合 + 热度排序**：热门聚合置顶区、`N 源聚合` badge、最新/热度排序切换。
 
 ## 后续扩展点
 
-- **真实 AI**：替换 `packages/ai/src/classify.ts`、`summarize.ts` 内部实现（接口签名不变）即可接入大模型做分类与中文摘要/翻译。
-- **更多解析器**：官网 News 详情页结构化、html_list/page_diff 真实站点接入、X 监控、用户系统/评分（后续阶段）。
+- **更多解析器/源**：官网 News 详情页结构化、更多 html_list/page_diff 真实站点、官方 YouTube 频道扩充。
+- **X(Twitter) 监控、用户系统、评分**（后续阶段）。

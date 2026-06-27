@@ -1,5 +1,5 @@
 import { prisma } from "@aniradar/db";
-import { classify, summarize } from "@aniradar/ai";
+import { analyze } from "@aniradar/ai";
 import { buildEventFromSignal, isSameEvent } from "@aniradar/detector";
 import type { ClassifyJobData } from "@aniradar/shared";
 
@@ -14,7 +14,8 @@ export async function processClassify(data: ClassifyJobData): Promise<void> {
   if (!signal) return;
 
   try {
-    const result = classify({
+    // 一次调用完成：是否动漫情报 + 分类 + 置信度 + 中文标题/摘要（无 key 时回退规则 mock）
+    const result = await analyze({
       title: signal.title,
       summary: signal.summary ?? undefined,
       rawText: signal.rawText ?? undefined,
@@ -68,15 +69,11 @@ export async function processClassify(data: ClassifyJobData): Promise<void> {
     }
 
     // 无可合并目标：新建 Event。
-    const { titleZh, summaryZh } = summarize({
-      title: signal.title,
-      summary: signal.summary ?? undefined,
-    });
     const event = await prisma.event.create({
       data: {
         title: built.title,
-        titleZh,
-        summaryZh,
+        titleZh: result.titleZh,
+        summaryZh: result.summaryZh,
         category: built.category,
         firstSeenAt: built.firstSeenAt,
         confidence: built.confidence,
