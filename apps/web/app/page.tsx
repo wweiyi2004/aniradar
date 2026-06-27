@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const VISIBLE = ["auto_published", "published", "draft_ai"] as const;
 const SELECT = {
   id: true, title: true, titleZh: true, summaryZh: true, imageUrl: true, videoUrl: true,
-  category: true, medium: true, status: true, firstSeenAt: true, confidence: true,
+  category: true, medium: true, facts: true, status: true, firstSeenAt: true, confidence: true,
   heatScore: true, officialConfirmed: true, _count: { select: { signals: true } },
 } as const;
 

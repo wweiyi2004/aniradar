@@ -6,6 +6,7 @@ import { CategoryBadge } from "./category-badge";
 import { MediumBadge } from "./medium-badge";
 import { StatusBadge } from "./status-badge";
 import { relTime } from "@/lib/format";
+import { buildFactRows } from "@/lib/facts";
 
 export interface EventCardData {
   id: string;
@@ -16,6 +17,7 @@ export interface EventCardData {
   videoUrl: string | null;
   category: string;
   medium: string | null;
+  facts: unknown;
   status: string;
   firstSeenAt: Date;
   confidence: number;
@@ -26,6 +28,9 @@ export interface EventCardData {
 
 export function EventCard({ ev, highlight = false }: { ev: EventCardData; highlight?: boolean }) {
   const multiSource = ev._count.signals > 1;
+  const keyFact = buildFactRows(ev.medium, ev.category, ev.facts).find((r) => "value" in r) as
+    | { label: string; value: string }
+    | undefined;
   return (
     <Link href={`/events/${ev.id}`} className="block">
       <Card
@@ -52,6 +57,11 @@ export function EventCard({ ev, highlight = false }: { ev: EventCardData; highli
           {ev.summaryZh && (
             <p className="line-clamp-2 text-sm leading-6 text-[hsl(var(--muted-foreground))]">
               {ev.summaryZh}
+            </p>
+          )}
+          {keyFact && (
+            <p className="text-xs text-[hsl(var(--foreground))]">
+              <span className="text-[hsl(var(--muted-foreground))]">{keyFact.label}</span> {keyFact.value}
             </p>
           )}
           <div className="flex flex-wrap gap-3 border-t pt-2 text-xs text-[hsl(var(--muted-foreground))]">
