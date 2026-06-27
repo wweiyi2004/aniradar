@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Flame } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { CategoryBadge } from "./category-badge";
 import { StatusBadge } from "./status-badge";
 import { relTime } from "@/lib/format";
@@ -13,27 +15,44 @@ export interface EventCardData {
   status: string;
   firstSeenAt: Date;
   confidence: number;
+  heatScore: number;
   officialConfirmed: boolean;
   _count: { signals: number };
 }
 
-export function EventCard({ ev }: { ev: EventCardData }) {
+export function EventCard({ ev, highlight = false }: { ev: EventCardData; highlight?: boolean }) {
+  const multiSource = ev._count.signals > 1;
   return (
     <Link href={`/events/${ev.id}`}>
-      <Card className="transition-colors hover:border-[hsl(var(--primary))]">
+      <Card
+        className={
+          "transition-colors hover:border-[hsl(var(--primary))] " +
+          (highlight ? "border-orange-500/60 bg-orange-500/5" : "")
+        }
+      >
         <CardContent className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-medium text-[hsl(var(--primary))]">{relTime(ev.firstSeenAt)}</span>
             <CategoryBadge category={ev.category} />
             <StatusBadge status={ev.status} />
+            {multiSource && (
+              <Badge className="gap-1 border-orange-500 text-orange-500">
+                <Flame className="h-3 w-3" />
+                {ev._count.signals} 源聚合
+              </Badge>
+            )}
             {ev.officialConfirmed && <span className="text-xs text-emerald-500">官方</span>}
           </div>
           <h3 className="font-semibold">{ev.titleZh || ev.title}</h3>
           {ev.summaryZh && (
             <p className="line-clamp-2 text-sm text-[hsl(var(--muted-foreground))]">{ev.summaryZh}</p>
           )}
-          <div className="flex gap-3 text-xs text-[hsl(var(--muted-foreground))]">
+          <div className="flex flex-wrap gap-3 text-xs text-[hsl(var(--muted-foreground))]">
             <span>置信度 {(ev.confidence * 100).toFixed(0)}%</span>
+            <span className="inline-flex items-center gap-1">
+              <Flame className="h-3 w-3 text-orange-500" />
+              热度 {ev.heatScore}
+            </span>
             <span>来源 {ev._count.signals}</span>
           </div>
         </CardContent>
