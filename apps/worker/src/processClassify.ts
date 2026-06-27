@@ -3,6 +3,7 @@ import { analyze } from "@aniradar/ai";
 import { buildEventFromSignal, isSameEvent } from "@aniradar/detector";
 import type { ClassifyJobData } from "@aniradar/shared";
 import { shouldRetry, type RetryCtx } from "./retry";
+import { mergeFacts } from "./facts";
 
 // 合并时间窗：仅在最近这段时间内的同分类 Event 里寻找可合并目标。
 const MERGE_WINDOW_MS = 72 * 60 * 60 * 1000;
@@ -66,6 +67,8 @@ export async function processClassify(data: ClassifyJobData, ctx?: RetryCtx): Pr
             confidence: Math.max(target.confidence, built.confidence),
             imageUrl: target.imageUrl ?? signal.imageUrl,
             videoUrl: target.videoUrl ?? signal.videoUrl,
+            medium: target.medium ?? result.medium,
+            facts: mergeFacts(target.facts, result.facts) as object,
             ...(upgradeToAuto ? { status: "auto_published" } : {}),
           },
         });
@@ -84,7 +87,9 @@ export async function processClassify(data: ClassifyJobData, ctx?: RetryCtx): Pr
         data: {
           title: built.title,
           titleZh: result.titleZh,
-          summaryZh: result.summaryZh,
+          summaryZh: result.leadZh,
+          medium: result.medium,
+          facts: result.facts as object,
           imageUrl: signal.imageUrl,
           videoUrl: signal.videoUrl,
           category: built.category,
