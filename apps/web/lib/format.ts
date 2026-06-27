@@ -24,6 +24,16 @@ export const CATEGORY_LABEL: Record<string, string> = {
   other: "其他",
 };
 
+export const MEDIUM_LABEL: Record<string, string> = {
+  anime: "动画",
+  manga: "漫画",
+  light_novel: "轻小说",
+  game: "游戏",
+  film: "剧场版",
+  goods_event: "周边",
+  other: "其它",
+};
+
 export const STATUS_LABEL: Record<string, string> = {
   draft_ai: "AI草稿",
   auto_published: "自动发布",
