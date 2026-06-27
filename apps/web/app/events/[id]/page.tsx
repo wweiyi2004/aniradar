@@ -4,6 +4,8 @@ import { Flame, PlayCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { CategoryBadge } from "@/components/category-badge";
 import { StatusBadge } from "@/components/status-badge";
+import { FactTable } from "@/components/fact-table";
+import { MediumBadge } from "@/components/medium-badge";
 import { relTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +24,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
       <article className="min-w-0 space-y-5">
         <div className="space-y-3 border-b pb-5">
           <div className="flex flex-wrap items-center gap-2">
+            <MediumBadge medium={ev.medium} />
             <CategoryBadge category={ev.category} />
             <StatusBadge status={ev.status} />
             {multiSource && (
@@ -42,9 +45,9 @@ export default async function EventDetail({ params }: { params: { id: string } }
           )}
         </div>
 
-        <section className="rounded-md border bg-[hsl(var(--card))] p-4">
-          <h2 className="mb-2 text-sm font-semibold text-[hsl(var(--muted-foreground))]">AI 摘要</h2>
-          <p className="leading-7">{ev.summaryZh || "（暂无摘要）"}</p>
+        <section className="space-y-4 rounded-md border bg-[hsl(var(--card))] p-4">
+          <p className="leading-7">{ev.summaryZh || "（暂无导语）"}</p>
+          <FactTable medium={ev.medium} category={ev.category} facts={ev.facts} />
         </section>
 
         <section className="space-y-3">
