@@ -52,6 +52,9 @@ export type EventStatus = (typeof EVENT_STATUS)[number];
 export const FETCHLOG_STATUS = ["success", "failed", "skipped"] as const;
 export type FetchLogStatus = (typeof FETCHLOG_STATUS)[number];
 
+export const MEDIUMS = ["anime", "manga", "light_novel", "game", "film", "goods_event", "other"] as const;
+export type Medium = (typeof MEDIUMS)[number];
+
 export interface FetchedItem {
   title: string;
   url: string;
@@ -92,3 +95,5 @@ export interface ClassifyJobData {
 export interface ReanalyzeJobData {
   signalId: string;
 }
+
+export { mediumFromCategory } from "./medium";
