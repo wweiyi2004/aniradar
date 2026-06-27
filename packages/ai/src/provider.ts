@@ -14,6 +14,11 @@ export function getAiConfig(): AiConfig | null {
   return { apiKey, baseUrl, model };
 }
 
+// 是否配置了可用的 AI（有 API key）。供调度判断要不要尝试重分析。
+export function isAiConfigured(): boolean {
+  return getAiConfig() !== null;
+}
+
 // 调用 OpenAI 兼容的 /chat/completions，要求返回 JSON，返回 content 字符串。
 export async function chatJson(
   cfg: AiConfig,

@@ -79,11 +79,16 @@ export interface ClassifyResult {
 
 export const QUEUE_FETCH = "fetch-source";
 export const QUEUE_CLASSIFY = "classify-signal";
+export const QUEUE_REANALYZE = "reanalyze-signal";
 
 export interface FetchJobData {
   sourceId: string;
 }
 
 export interface ClassifyJobData {
+  signalId: string;
+}
+
+export interface ReanalyzeJobData {
   signalId: string;
 }

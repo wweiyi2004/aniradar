@@ -24,6 +24,15 @@ export const env = {
   get enrichMaxPerCycle() {
     return Number(process.env.ENRICH_MAX_PER_CYCLE ?? 12);
   },
+  get reanalyzeIntervalMs() {
+    return Number(process.env.REANALYZE_INTERVAL_MS ?? 600000);
+  },
+  get reanalyzeWindowHours() {
+    return Number(process.env.REANALYZE_WINDOW_HOURS ?? 168);
+  },
+  get reanalyzeBatch() {
+    return Number(process.env.REANALYZE_BATCH ?? 20);
+  },
 };
 
 export function getRedisConnection(): { host: string; port: number } {
