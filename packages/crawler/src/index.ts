@@ -32,10 +32,10 @@ const DEFAULT_HEADERS: Record<string, string> = {
 
 export async function fetchUrl(
   url: string,
-  opts: { etag?: string; lastModified?: string } = {},
+  opts: { etag?: string; lastModified?: string; timeoutMs?: number } = {},
 ): Promise<FetchUrlResult> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), env.crawlerTimeoutMs);
+  const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? env.crawlerTimeoutMs);
   try {
     const headers: Record<string, string> = { ...DEFAULT_HEADERS, "user-agent": env.userAgent };
     if (opts.etag) headers["if-none-match"] = opts.etag;

@@ -57,6 +57,8 @@ export interface FetchedItem {
   url: string;
   rawText?: string;
   summary?: string;
+  imageUrl?: string;
+  videoUrl?: string;
   publishedAt?: Date;
   publishedTimePrecision: PublishedTimePrecision;
   externalId?: string;

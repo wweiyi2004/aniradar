@@ -19,11 +19,15 @@ export async function parseYouTubeRss(xml: string): Promise<FetchedItem[]> {
     const iso = it.isoDate ? String(it.isoDate) : undefined;
     const d = iso ? new Date(iso) : undefined;
     const valid = d && !isNaN(d.getTime());
+    const videoId = it.videoId ? String(it.videoId) : undefined;
     return [
       {
         title,
         url,
-        externalId: it.videoId ? String(it.videoId) : undefined,
+        externalId: videoId,
+        // YouTube 缩略图与观看链接可直接由 videoId 推导，无需额外请求
+        imageUrl: videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : undefined,
+        videoUrl: videoId ? `https://www.youtube.com/watch?v=${videoId}` : url,
         publishedAt: valid ? d : undefined,
         publishedTimePrecision: valid ? "datetime" : "unknown",
       } satisfies FetchedItem,

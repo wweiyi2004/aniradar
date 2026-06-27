@@ -11,6 +11,8 @@ export interface EventCardData {
   title: string;
   titleZh: string | null;
   summaryZh: string | null;
+  imageUrl: string | null;
+  videoUrl: string | null;
   category: string;
   status: string;
   firstSeenAt: Date;
@@ -23,15 +25,15 @@ export interface EventCardData {
 export function EventCard({ ev, highlight = false }: { ev: EventCardData; highlight?: boolean }) {
   const multiSource = ev._count.signals > 1;
   return (
-    <Link href={`/events/${ev.id}`}>
+    <Link href={`/events/${ev.id}`} className="block">
       <Card
         className={
-          "transition-colors hover:border-[hsl(var(--primary))] " +
+          "overflow-hidden rounded-md shadow-none transition-colors hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted))]/35 " +
           (highlight ? "border-orange-500/60 bg-orange-500/5" : "")
         }
       >
-        <CardContent className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
+        <CardContent className="space-y-2.5 p-4">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs font-medium text-[hsl(var(--primary))]">{relTime(ev.firstSeenAt)}</span>
             <CategoryBadge category={ev.category} />
             <StatusBadge status={ev.status} />
@@ -43,11 +45,13 @@ export function EventCard({ ev, highlight = false }: { ev: EventCardData; highli
             )}
             {ev.officialConfirmed && <span className="text-xs text-emerald-500">官方</span>}
           </div>
-          <h3 className="font-semibold">{ev.titleZh || ev.title}</h3>
+          <h3 className="line-clamp-2 text-base font-semibold leading-6">{ev.titleZh || ev.title}</h3>
           {ev.summaryZh && (
-            <p className="line-clamp-2 text-sm text-[hsl(var(--muted-foreground))]">{ev.summaryZh}</p>
+            <p className="line-clamp-2 text-sm leading-6 text-[hsl(var(--muted-foreground))]">
+              {ev.summaryZh}
+            </p>
           )}
-          <div className="flex flex-wrap gap-3 text-xs text-[hsl(var(--muted-foreground))]">
+          <div className="flex flex-wrap gap-3 border-t pt-2 text-xs text-[hsl(var(--muted-foreground))]">
             <span>置信度 {(ev.confidence * 100).toFixed(0)}%</span>
             <span className="inline-flex items-center gap-1">
               <Flame className="h-3 w-3 text-orange-500" />

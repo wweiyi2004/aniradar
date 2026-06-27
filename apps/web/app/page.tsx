@@ -51,13 +51,15 @@ export default async function Home({ searchParams }: { searchParams: { sort?: st
     <div className="space-y-6">
       {hotEvents.length > 0 && (
         <section className="space-y-3">
-          <h2 className="flex items-center gap-2 text-lg font-bold">
-            <Flame className="h-5 w-5 text-orange-500" />
-            热门聚合
-            <span className="text-sm font-normal text-[hsl(var(--muted-foreground))]">
-              多源报道同一情报
-            </span>
-          </h2>
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-bold">
+                <Flame className="h-5 w-5 text-orange-500" />
+                热门聚合
+              </h2>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">多源报道同一情报</p>
+            </div>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {hotEvents.map((ev) => (
               <EventCard key={ev.id} ev={ev} highlight />
@@ -67,10 +69,10 @@ export default async function Home({ searchParams }: { searchParams: { sort?: st
       )}
 
       <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b pb-3">
           <div>
-            <h1 className="text-xl font-bold">实时情报流</h1>
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            <h1 className="text-2xl font-bold tracking-normal">实时情报流</h1>
+            <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
               {sort === "hot" ? "按热度排序" : "按首次发现时间排序"} · 共 {mainEvents.length} 条
             </p>
           </div>

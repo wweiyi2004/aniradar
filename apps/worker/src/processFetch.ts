@@ -1,5 +1,5 @@
 import { prisma } from "@aniradar/db";
-import { getAdapter } from "@aniradar/sources";
+import { getAdapter, enrichItems } from "@aniradar/sources";
 import { computeSignalHash } from "@aniradar/detector";
 import type { FetchJobData } from "@aniradar/shared";
 import { classifyQueue } from "./queues";
@@ -28,9 +28,23 @@ export async function processFetch(data: FetchJobData): Promise<void> {
       return;
     }
 
+    // 先按 hash 找出新条目，仅对新条目抓详情页增强（正文全文 + 主图），避免对重复项浪费请求。
+    const hashed = result.items.map((item) => ({ item, hash: computeSignalHash(source.id, item) }));
+    const existing = await prisma.signal.findMany({
+      where: { hash: { in: hashed.map((h) => h.hash) } },
+      select: { hash: true },
+    });
+    const existingHashes = new Set(existing.map((e) => e.hash));
+    const fresh = hashed.filter((h) => !existingHashes.has(h.hash));
+    const enriched = await enrichItems(
+      fresh.map((h) => h.item),
+      source.fetchStrategy,
+    );
+
     let newCount = 0;
-    for (const item of result.items) {
-      const hash = computeSignalHash(source.id, item);
+    for (let i = 0; i < fresh.length; i++) {
+      const item = enriched[i];
+      const hash = fresh[i].hash;
       try {
         const signal = await prisma.signal.create({
           data: {
@@ -39,6 +53,8 @@ export async function processFetch(data: FetchJobData): Promise<void> {
             url: item.url,
             rawText: item.rawText,
             summary: item.summary,
+            imageUrl: item.imageUrl,
+            videoUrl: item.videoUrl,
             publishedAt: item.publishedAt,
             publishedTimePrecision: item.publishedTimePrecision,
             hash,

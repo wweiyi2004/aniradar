@@ -61,6 +61,8 @@ export async function processClassify(data: ClassifyJobData): Promise<void> {
           heatScore: { increment: 1 },
           officialConfirmed: target.officialConfirmed || built.officialConfirmed,
           confidence: Math.max(target.confidence, built.confidence),
+          imageUrl: target.imageUrl ?? signal.imageUrl,
+          videoUrl: target.videoUrl ?? signal.videoUrl,
           ...(upgradeToAuto ? { status: "auto_published" } : {}),
         },
       });
@@ -77,6 +79,8 @@ export async function processClassify(data: ClassifyJobData): Promise<void> {
         title: built.title,
         titleZh: result.titleZh,
         summaryZh: result.summaryZh,
+        imageUrl: signal.imageUrl,
+        videoUrl: signal.videoUrl,
         category: built.category,
         firstSeenAt: built.firstSeenAt,
         confidence: built.confidence,

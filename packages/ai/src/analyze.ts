@@ -34,8 +34,10 @@ function buildSystem(): string {
     "放送/配信日期、延期、剧场版/电影化、主题歌、活动信息、周边发售、BD/DVD 发售等官方/媒体情报。",
     "纯周边联名、广告、专栏、与动漫无关的内容判为非情报（isAnimeNews=false）。",
     transRule,
+    "summaryZh 要写成简体中文情报简报，180~280字，2~4句话；优先交代：公布了什么、作品/企划名、播出/上映/配信时间、制作/声优/主视觉/PV等关键信息。",
+    "不要只复述标题；不要写空泛评价；信息不足时说明“目前公开信息有限”，但仍基于标题/摘要/正文提炼已知事实。",
     "只输出一个 JSON 对象，字段：",
-    "isAnimeNews(boolean), category(string), confidence(0~1 number), titleZh(string), summaryZh(简体中文, <=120字)。",
+    "isAnimeNews(boolean), category(string), confidence(0~1 number), titleZh(string), summaryZh(string)。",
     `category 必须是以下之一：${EVENT_CATEGORIES.join(", ")}。非情报时 category 用 "other"。`,
   ].join("");
 }
@@ -62,7 +64,7 @@ export async function analyze(input: AnalyzeInput): Promise<AnalyzeResult> {
     const user = [
       `标题: ${input.title}`,
       `摘要: ${input.summary ?? ""}`,
-      `正文片段: ${(input.rawText ?? "").slice(0, 500)}`,
+      `正文片段: ${(input.rawText ?? "").slice(0, 1800)}`,
     ].join("\n");
     const content = await chatJson(cfg, buildSystem(), user);
     const parsed = JSON.parse(content) as Record<string, unknown>;

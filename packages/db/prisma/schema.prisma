@@ -108,6 +108,8 @@ model Signal {
   url                    String
   rawText                String?
   summary                String?
+  imageUrl               String?
+  videoUrl               String?
   publishedAt            DateTime?
   publishedTimePrecision PublishedTimePrecision @default(unknown)
   firstSeenAt            DateTime               @default(now())
@@ -127,6 +129,8 @@ model Event {
   title             String
   titleZh           String?
   summaryZh         String?
+  imageUrl          String?
+  videoUrl          String?
   category          EventCategory
   firstSeenAt       DateTime      @default(now())
   confidence        Float         @default(0)
