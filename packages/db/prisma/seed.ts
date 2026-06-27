@@ -45,6 +45,30 @@ const sources: Prisma.SourceCreateInput[] = [
     fetchIntervalSec: 900,
   },
   {
+    name: "TOHO animation YouTube",
+    url: "https://www.youtube.com/feeds/videos.xml?channel_id=UC14Yc2Qv92DMuyNRlHvpo2Q",
+    type: "youtube_rss",
+    level: "S",
+    fetchStrategy: "youtube_rss",
+    fetchIntervalSec: 900,
+  },
+  {
+    name: "KADOKAWAanime YouTube",
+    url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCY5fcqgSrQItPAX_Z5Frmwg",
+    type: "youtube_rss",
+    level: "S",
+    fetchStrategy: "youtube_rss",
+    fetchIntervalSec: 900,
+  },
+  {
+    name: "ぽにきゃん PONY CANYON Anime YouTube",
+    url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCb-ekPowbBlQhyt7ZXPiu5Q",
+    type: "youtube_rss",
+    level: "A",
+    fetchStrategy: "youtube_rss",
+    fetchIntervalSec: 1200,
+  },
+  {
     // 映画.com アニメ News：服务端渲染列表页，selector 已实测可抽 20 条
     name: "映画.com アニメ (HTML)",
     url: "https://anime.eiga.com/news/",

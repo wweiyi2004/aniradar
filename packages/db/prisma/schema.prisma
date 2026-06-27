@@ -104,6 +104,7 @@ model Signal {
   sourceId               String
   source                 Source                 @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   title                  String
+  titleZh                String?
   url                    String
   rawText                String?
   summary                String?

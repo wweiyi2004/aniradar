@@ -62,8 +62,11 @@ export default async function SignalsPage({
             <TR key={s.id}>
               <TD className="max-w-md">
                 <a href={s.url} target="_blank" rel="noreferrer" className="hover:underline">
-                  {s.title}
+                  {s.titleZh || s.title}
                 </a>
+                {s.titleZh && s.titleZh !== s.title && (
+                  <div className="text-xs text-[hsl(var(--muted-foreground))]">{s.title}</div>
+                )}
               </TD>
               <TD>{s.source.name}</TD>
               <TD>{s.status}</TD>

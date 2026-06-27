@@ -18,16 +18,27 @@ export interface AnalyzeResult {
   source: "ai" | "mock";
 }
 
-const SYSTEM = [
-  "你是动漫新情报分类与翻译助手。给定一条（多为日文的）资讯，判断它是否属于“动漫新情报”，",
-  "并做粗分类，同时把标题与摘要翻译成简体中文。",
-  "动漫新情报指：动画化、续作/新一季、PV/预告/特报、主视觉/key visual、声优解禁、STAFF 解禁、",
-  "放送/配信日期、延期、剧场版/电影化、主题歌、活动信息、周边发售、BD/DVD 发售等官方/媒体情报。",
-  "纯周边联名、广告、专栏、与动漫无关的内容判为非情报（isAnimeNews=false）。",
-  "只输出一个 JSON 对象，字段：",
-  "isAnimeNews(boolean), category(string), confidence(0~1 number), titleZh(string), summaryZh(简体中文, <=120字)。",
-  `category 必须是以下之一：${EVENT_CATEGORIES.join(", ")}。非情报时 category 用 "other"。`,
-].join("");
+// 是否对“非动漫情报”的条目也翻译标题/摘要（默认开；同一次调用完成，几乎不增加成本）。
+function translateNonNews(): boolean {
+  return process.env.AI_TRANSLATE_NON_NEWS !== "false";
+}
+
+function buildSystem(): string {
+  const transRule = translateNonNews()
+    ? "无论是否动漫情报，titleZh/summaryZh 都翻译成简体中文。"
+    : "仅动漫情报才翻译；非情报时 titleZh 可保留原文、summaryZh 留空。";
+  return [
+    "你是动漫新情报分类与翻译助手。给定一条（多为日文的）资讯，判断它是否属于“动漫新情报”，",
+    "并做粗分类，同时把标题与摘要翻译成简体中文。",
+    "动漫新情报指：动画化、续作/新一季、PV/预告/特报、主视觉/key visual、声优解禁、STAFF 解禁、",
+    "放送/配信日期、延期、剧场版/电影化、主题歌、活动信息、周边发售、BD/DVD 发售等官方/媒体情报。",
+    "纯周边联名、广告、专栏、与动漫无关的内容判为非情报（isAnimeNews=false）。",
+    transRule,
+    "只输出一个 JSON 对象，字段：",
+    "isAnimeNews(boolean), category(string), confidence(0~1 number), titleZh(string), summaryZh(简体中文, <=120字)。",
+    `category 必须是以下之一：${EVENT_CATEGORIES.join(", ")}。非情报时 category 用 "other"。`,
+  ].join("");
+}
 
 function mockAnalyze(input: AnalyzeInput): AnalyzeResult {
   const c = classify(input);
@@ -53,7 +64,7 @@ export async function analyze(input: AnalyzeInput): Promise<AnalyzeResult> {
       `摘要: ${input.summary ?? ""}`,
       `正文片段: ${(input.rawText ?? "").slice(0, 500)}`,
     ].join("\n");
-    const content = await chatJson(cfg, SYSTEM, user);
+    const content = await chatJson(cfg, buildSystem(), user);
     const parsed = JSON.parse(content) as Record<string, unknown>;
 
     const isAnimeNews = Boolean(parsed.isAnimeNews);

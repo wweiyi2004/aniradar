@@ -22,7 +22,10 @@ export async function processClassify(data: ClassifyJobData): Promise<void> {
     });
 
     if (!result.isAnimeNews) {
-      await prisma.signal.update({ where: { id: signal.id }, data: { status: "ignored" } });
+      await prisma.signal.update({
+        where: { id: signal.id },
+        data: { status: "ignored", titleZh: result.titleZh },
+      });
       return;
     }
 
@@ -63,7 +66,7 @@ export async function processClassify(data: ClassifyJobData): Promise<void> {
       });
       await prisma.signal.update({
         where: { id: signal.id },
-        data: { status: "classified", eventId: target.id },
+        data: { status: "classified", eventId: target.id, titleZh: result.titleZh },
       });
       return;
     }
@@ -84,7 +87,7 @@ export async function processClassify(data: ClassifyJobData): Promise<void> {
     });
     await prisma.signal.update({
       where: { id: signal.id },
-      data: { status: "classified", eventId: event.id },
+      data: { status: "classified", eventId: event.id, titleZh: result.titleZh },
     });
   } catch {
     await prisma.signal.update({ where: { id: signal.id }, data: { status: "failed" } });
