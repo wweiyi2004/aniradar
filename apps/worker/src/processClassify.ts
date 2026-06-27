@@ -25,7 +25,7 @@ export async function processClassify(data: ClassifyJobData, ctx?: RetryCtx): Pr
     if (!result.isAnimeNews) {
       await prisma.signal.update({
         where: { id: signal.id },
-        data: { status: "ignored", titleZh: result.titleZh },
+        data: { status: "ignored", titleZh: result.titleZh, aiSource: result.source },
       });
       return;
     }
@@ -69,7 +69,7 @@ export async function processClassify(data: ClassifyJobData, ctx?: RetryCtx): Pr
       });
       await prisma.signal.update({
         where: { id: signal.id },
-        data: { status: "classified", eventId: target.id, titleZh: result.titleZh },
+        data: { status: "classified", eventId: target.id, titleZh: result.titleZh, aiSource: result.source },
       });
       return;
     }
@@ -92,7 +92,7 @@ export async function processClassify(data: ClassifyJobData, ctx?: RetryCtx): Pr
     });
     await prisma.signal.update({
       where: { id: signal.id },
-      data: { status: "classified", eventId: event.id, titleZh: result.titleZh },
+      data: { status: "classified", eventId: event.id, titleZh: result.titleZh, aiSource: result.source },
     });
   } catch (e) {
     if (shouldRetry(e, ctx)) throw e; // 瞬时错误（多为 DB 抖动）交 BullMQ 重试

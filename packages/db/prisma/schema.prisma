@@ -110,6 +110,7 @@ model Signal {
   summary                String?
   imageUrl               String?
   videoUrl               String?
+  aiSource               String?
   publishedAt            DateTime?
   publishedTimePrecision PublishedTimePrecision @default(unknown)
   firstSeenAt            DateTime               @default(now())
