@@ -21,6 +21,9 @@ export const env = {
   get crawlerTimeoutMs() {
     return Number(process.env.CRAWLER_TIMEOUT_MS ?? 15000);
   },
+  get enrichMaxPerCycle() {
+    return Number(process.env.ENRICH_MAX_PER_CYCLE ?? 12);
+  },
 };
 
 export function getRedisConnection(): { host: string; port: number } {

@@ -3,6 +3,8 @@ import { getAdapter, enrichItems } from "@aniradar/sources";
 import { computeSignalHash } from "@aniradar/detector";
 import type { FetchJobData } from "@aniradar/shared";
 import { classifyQueue } from "./queues";
+import { env } from "@aniradar/config";
+import { pickToEnrich } from "./enrichPlan";
 
 export async function processFetch(data: FetchJobData): Promise<void> {
   const source = await prisma.source.findUnique({ where: { id: data.sourceId } });
@@ -36,15 +38,20 @@ export async function processFetch(data: FetchJobData): Promise<void> {
     });
     const existingHashes = new Set(existing.map((e) => e.hash));
     const fresh = hashed.filter((h) => !existingHashes.has(h.hash));
-    const enriched = await enrichItems(
-      fresh.map((h) => h.item),
+
+    // 限流：仅对最新 enrichMaxPerCycle 条抓详情页，其余照常入库但不增强。
+    const { toEnrich, rest } = pickToEnrich(fresh, env.enrichMaxPerCycle);
+    const enrichedItems = await enrichItems(
+      toEnrich.map((e) => e.item),
       source.fetchStrategy,
     );
+    const ordered = [...toEnrich, ...rest];
+    const enriched = [...enrichedItems, ...rest.map((e) => e.item)];
 
     let newCount = 0;
-    for (let i = 0; i < fresh.length; i++) {
+    for (let i = 0; i < ordered.length; i++) {
       const item = enriched[i];
-      const hash = fresh[i].hash;
+      const hash = ordered[i].hash;
       try {
         const signal = await prisma.signal.create({
           data: {
