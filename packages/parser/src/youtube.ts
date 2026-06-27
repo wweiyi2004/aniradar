@@ -12,7 +12,7 @@ const parser = new Parser({
 
 export async function parseYouTubeRss(xml: string): Promise<FetchedItem[]> {
   const feed = await parser.parseString(xml);
-  return (feed.items ?? []).flatMap((it: Record<string, unknown>) => {
+  return (feed.items ?? []).flatMap((it) => {
     const url = String(it.link ?? "").trim();
     const title = String(it.title ?? "").trim();
     if (!url || !title) return [];
