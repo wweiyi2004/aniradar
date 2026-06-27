@@ -2,6 +2,7 @@ import { PrismaClient, Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// 全部为实测可达、返回有效 XML 的真实源（2026-06 验证）。
 const sources: Prisma.SourceCreateInput[] = [
   {
     name: "アニメ！アニメ！",
@@ -12,12 +13,28 @@ const sources: Prisma.SourceCreateInput[] = [
     fetchIntervalSec: 600,
   },
   {
-    name: "Anime News Network",
-    url: "https://www.animenewsnetwork.com/all/rss.xml",
+    name: "コミックナタリー",
+    url: "https://natalie.mu/comic/feed/news",
     type: "media",
     level: "A",
     fetchStrategy: "rss",
     fetchIntervalSec: 600,
+  },
+  {
+    name: "映画ナタリー",
+    url: "https://natalie.mu/eiga/feed/news",
+    type: "media",
+    level: "B",
+    fetchStrategy: "rss",
+    fetchIntervalSec: 900,
+  },
+  {
+    name: "音楽ナタリー",
+    url: "https://natalie.mu/music/feed/news",
+    type: "media",
+    level: "B",
+    fetchStrategy: "rss",
+    fetchIntervalSec: 900,
   },
   {
     name: "アニプレックス YouTube",
@@ -27,36 +44,38 @@ const sources: Prisma.SourceCreateInput[] = [
     fetchStrategy: "youtube_rss",
     fetchIntervalSec: 900,
   },
-  {
-    name: "示例官网 News(HtmlList)",
-    url: "https://example.com/news/",
-    type: "official_news",
-    level: "A",
-    fetchStrategy: "html_list",
-    fetchIntervalSec: 1800,
-    selectorConfig: {
-      listItem: ".news-list li",
-      title: ".title",
-      url: "a",
-      date: ".date",
-      summary: ".summary",
-    },
-  },
-  {
-    name: "示例公司公告(PageDiff)",
-    url: "https://example.com/ir/",
-    type: "company_news",
-    level: "B",
-    fetchStrategy: "page_diff",
-    fetchIntervalSec: 3600,
-  },
+];
+
+// 早期占位/被反爬拦截的源，重新 seed 时清理掉。
+const deprecatedUrls = [
+  "https://www.animenewsnetwork.com/all/rss.xml",
+  "https://example.com/news/",
+  "https://example.com/ir/",
 ];
 
 async function main() {
+  for (const url of deprecatedUrls) {
+    await prisma.source.deleteMany({ where: { url } });
+  }
+
   for (const s of sources) {
     const exists = await prisma.source.findFirst({ where: { url: s.url } });
-    if (exists) continue;
-    await prisma.source.create({ data: s });
+    if (exists) {
+      // 幂等：已存在则更新元数据（不动抓取状态字段如 etag/lastSeenHash）
+      await prisma.source.update({
+        where: { id: exists.id },
+        data: {
+          name: s.name,
+          type: s.type,
+          level: s.level,
+          fetchStrategy: s.fetchStrategy,
+          fetchIntervalSec: s.fetchIntervalSec,
+          selectorConfig: s.selectorConfig,
+        },
+      });
+    } else {
+      await prisma.source.create({ data: s });
+    }
   }
   console.log("seed done");
 }
