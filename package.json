@@ -1,0 +1,22 @@
+{
+  "name": "aniradar",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:generate": "pnpm --filter @aniradar/db generate",
+    "db:migrate": "pnpm --filter @aniradar/db migrate",
+    "db:seed": "pnpm --filter @aniradar/db seed",
+    "dev:web": "pnpm --filter @aniradar/web dev",
+    "dev:worker": "pnpm --filter @aniradar/worker dev",
+    "build": "pnpm -r build",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "tsx": "^4.19.0",
+    "prettier": "^3.3.0",
+    "@types/node": "^22.0.0"
+  },
+  "packageManager": "pnpm@11.5.2"
+}

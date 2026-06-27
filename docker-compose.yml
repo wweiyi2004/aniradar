@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: aniradar
+      POSTGRES_PASSWORD: aniradar
+      POSTGRES_DB: aniradar
+    ports: ["5432:5432"]
+    volumes: ["aniradar_pg:/var/lib/postgresql/data"]
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    volumes: ["aniradar_redis:/data"]
+volumes:
+  aniradar_pg:
+  aniradar_redis:
