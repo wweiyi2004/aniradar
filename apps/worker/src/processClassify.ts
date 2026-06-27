@@ -55,44 +55,50 @@ export async function processClassify(data: ClassifyJobData, ctx?: RetryCtx): Pr
 
     if (target) {
       // 合并：挂到既有事件，累加热度，必要时提升官方确认/置信度/状态。
+      // 事件写 + signal 写放进同一事务：瞬时失败重试时整体回滚，避免重放导致热度重复累加。
       const upgradeToAuto = built.status === "auto_published" && target.status === "draft_ai";
-      await prisma.event.update({
-        where: { id: target.id },
-        data: {
-          heatScore: { increment: 1 },
-          officialConfirmed: target.officialConfirmed || built.officialConfirmed,
-          confidence: Math.max(target.confidence, built.confidence),
-          imageUrl: target.imageUrl ?? signal.imageUrl,
-          videoUrl: target.videoUrl ?? signal.videoUrl,
-          ...(upgradeToAuto ? { status: "auto_published" } : {}),
-        },
-      });
-      await prisma.signal.update({
-        where: { id: signal.id },
-        data: { status: "classified", eventId: target.id, titleZh: result.titleZh, aiSource: result.source },
+      await prisma.$transaction(async (tx) => {
+        await tx.event.update({
+          where: { id: target.id },
+          data: {
+            heatScore: { increment: 1 },
+            officialConfirmed: target.officialConfirmed || built.officialConfirmed,
+            confidence: Math.max(target.confidence, built.confidence),
+            imageUrl: target.imageUrl ?? signal.imageUrl,
+            videoUrl: target.videoUrl ?? signal.videoUrl,
+            ...(upgradeToAuto ? { status: "auto_published" } : {}),
+          },
+        });
+        await tx.signal.update({
+          where: { id: signal.id },
+          data: { status: "classified", eventId: target.id, titleZh: result.titleZh, aiSource: result.source },
+        });
       });
       return;
     }
 
-    // 无可合并目标：新建 Event。
-    const event = await prisma.event.create({
-      data: {
-        title: built.title,
-        titleZh: result.titleZh,
-        summaryZh: result.summaryZh,
-        imageUrl: signal.imageUrl,
-        videoUrl: signal.videoUrl,
-        category: built.category,
-        firstSeenAt: built.firstSeenAt,
-        confidence: built.confidence,
-        officialConfirmed: built.officialConfirmed,
-        status: built.status,
-        heatScore: 1,
-      },
-    });
-    await prisma.signal.update({
-      where: { id: signal.id },
-      data: { status: "classified", eventId: event.id, titleZh: result.titleZh, aiSource: result.source },
+    // 无可合并目标：新建 Event。事件创建 + signal 写放进同一事务：
+    // 瞬时失败重试时整体回滚，避免重放产生重复事件。
+    await prisma.$transaction(async (tx) => {
+      const event = await tx.event.create({
+        data: {
+          title: built.title,
+          titleZh: result.titleZh,
+          summaryZh: result.summaryZh,
+          imageUrl: signal.imageUrl,
+          videoUrl: signal.videoUrl,
+          category: built.category,
+          firstSeenAt: built.firstSeenAt,
+          confidence: built.confidence,
+          officialConfirmed: built.officialConfirmed,
+          status: built.status,
+          heatScore: 1,
+        },
+      });
+      await tx.signal.update({
+        where: { id: signal.id },
+        data: { status: "classified", eventId: event.id, titleZh: result.titleZh, aiSource: result.source },
+      });
     });
   } catch (e) {
     if (shouldRetry(e, ctx)) throw e; // 瞬时错误（多为 DB 抖动）交 BullMQ 重试
