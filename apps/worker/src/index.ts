@@ -34,11 +34,11 @@ fetchWorker.on("failed", (j, e) => console.error("fetch failed", j?.id, e?.messa
 classifyWorker.on("failed", (j, e) => console.error("classify failed", j?.id, e?.message));
 reanalyzeWorker.on("failed", (j, e) => console.error("reanalyze failed", j?.id, e?.message));
 
-const timer = startScheduler();
+const timers = startScheduler();
 console.log("AniRadar worker started");
 
 async function shutdown() {
-  clearInterval(timer);
+  timers.forEach(clearInterval);
   await fetchWorker.close();
   await classifyWorker.close();
   await reanalyzeWorker.close();
