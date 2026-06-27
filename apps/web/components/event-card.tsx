@@ -3,6 +3,7 @@ import { Flame } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CategoryBadge } from "./category-badge";
+import { MediumBadge } from "./medium-badge";
 import { StatusBadge } from "./status-badge";
 import { relTime } from "@/lib/format";
 
@@ -14,6 +15,7 @@ export interface EventCardData {
   imageUrl: string | null;
   videoUrl: string | null;
   category: string;
+  medium: string | null;
   status: string;
   firstSeenAt: Date;
   confidence: number;
@@ -35,6 +37,7 @@ export function EventCard({ ev, highlight = false }: { ev: EventCardData; highli
         <CardContent className="space-y-2.5 p-4">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs font-medium text-[hsl(var(--primary))]">{relTime(ev.firstSeenAt)}</span>
+            <MediumBadge medium={ev.medium} />
             <CategoryBadge category={ev.category} />
             <StatusBadge status={ev.status} />
             {multiSource && (
