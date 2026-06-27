@@ -130,6 +130,8 @@ model Event {
   title             String
   titleZh           String?
   summaryZh         String?
+  medium            String?
+  facts             Json?
   imageUrl          String?
   videoUrl          String?
   category          EventCategory
