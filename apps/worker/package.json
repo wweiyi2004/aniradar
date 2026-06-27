@@ -1,0 +1,20 @@
+{
+  "name": "@aniradar/worker",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
+    "start": "dotenv -e ../../.env -- tsx src/index.ts"
+  },
+  "dependencies": {
+    "@aniradar/shared": "workspace:*",
+    "@aniradar/config": "workspace:*",
+    "@aniradar/db": "workspace:*",
+    "@aniradar/sources": "workspace:*",
+    "@aniradar/detector": "workspace:*",
+    "@aniradar/ai": "workspace:*",
+    "bullmq": "^5.21.0"
+  },
+  "devDependencies": { "tsx": "^4.19.0" }
+}
