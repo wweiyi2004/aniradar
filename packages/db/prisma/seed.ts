@@ -44,6 +44,22 @@ const sources: Prisma.SourceCreateInput[] = [
     fetchStrategy: "youtube_rss",
     fetchIntervalSec: 900,
   },
+  {
+    // 映画.com アニメ News：服务端渲染列表页，selector 已实测可抽 20 条
+    name: "映画.com アニメ (HTML)",
+    url: "https://anime.eiga.com/news/",
+    type: "media",
+    level: "B",
+    fetchStrategy: "html_list",
+    fetchIntervalSec: 1800,
+    selectorConfig: {
+      listItem: "li.clearfix",
+      title: ".boxTtl",
+      url: ".boxTtl a",
+      date: ".boxDate span",
+      summary: ".boxText",
+    },
+  },
 ];
 
 // 早期占位/被反爬拦截的源，重新 seed 时清理掉。

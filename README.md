@@ -87,6 +87,8 @@ pnpm dev:web
 
 > 说明：`docker-compose.yml` 中 PostgreSQL 映射到主机 **5433** 端口（避免与其它本地 Postgres 冲突），`.env` 已对应。如需改回 5432，同时改 `docker-compose.yml` 与 `.env` 的 `DATABASE_URL`。
 
+> **代理（国内/受限网络）**：worker 抓取国际源（YouTube、部分 CDN 站点如 映画.com）需要代理。crawler 会自动读取 `HTTPS_PROXY` / `HTTP_PROXY` 环境变量并经其转发（Node 全局 fetch 默认不读这些变量，故 crawler 用 undici `ProxyAgent` 显式处理）。例如启动 worker 前：`export HTTPS_PROXY=http://127.0.0.1:7890`。国内可直连的源（animeanime、natalie 等）无代理也可。
+
 启动后：
 - 前台首页 `http://localhost:3000/` —— 实时情报流（按首次发现时间倒序）
 - 事件详情 `http://localhost:3000/events/[id]`
@@ -140,7 +142,7 @@ pnpm test    # 运行 parser / detector / ai 等纯逻辑单测（vitest）
 
 ## 下一步建议接入的真实 News 源
 
-已内置并实测可用的真实源：`アニメ！アニメ！`、`コミックナタリー`、`映画ナタリー`、`音楽ナタリー`（RSS）+ `アニプレックス`（YouTube RSS）。建议后续按"官方/高时效"继续扩充：
+已内置并实测可用的真实源：`アニメ！アニメ！`、`コミックナタリー`、`映画ナタリー`、`音楽ナタリー`（RSS）+ `アニプレックス`（YouTube RSS）+ `映画.com アニメ`（**html_list**，selector 已实测可抽 20 条）。建议后续按"官方/高时效"继续扩充：
 
 **RSS / 官方新闻（最易接、时效高）**
 - アニメ！アニメ！(animeanime.jp) — 已内置，稳定可用
