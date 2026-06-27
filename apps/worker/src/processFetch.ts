@@ -5,8 +5,9 @@ import type { FetchJobData } from "@aniradar/shared";
 import { classifyQueue } from "./queues";
 import { env } from "@aniradar/config";
 import { pickToEnrich } from "./enrichPlan";
+import { shouldRetry, type RetryCtx } from "./retry";
 
-export async function processFetch(data: FetchJobData): Promise<void> {
+export async function processFetch(data: FetchJobData, ctx?: RetryCtx): Promise<void> {
   const source = await prisma.source.findUnique({ where: { id: data.sourceId } });
   if (!source || !source.enabled) return;
 
@@ -100,13 +101,14 @@ export async function processFetch(data: FetchJobData): Promise<void> {
     });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : String(e);
-    await prisma.source.update({
-      where: { id: source.id },
-      data: { lastCheckedAt: new Date(), failureCount: { increment: 1 } },
-    });
     await prisma.fetchLog.update({
       where: { id: log.id },
       data: { status: "failed", message, endedAt: new Date() },
+    });
+    if (shouldRetry(e, ctx)) throw e; // 瞬时网络错误交 BullMQ 重试
+    await prisma.source.update({
+      where: { id: source.id },
+      data: { lastCheckedAt: new Date(), failureCount: { increment: 1 } },
     });
   }
 }
