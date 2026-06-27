@@ -2,11 +2,12 @@ import { prisma } from "@aniradar/db";
 import { analyze } from "@aniradar/ai";
 import { buildEventFromSignal, isSameEvent } from "@aniradar/detector";
 import type { ClassifyJobData } from "@aniradar/shared";
+import { shouldRetry, type RetryCtx } from "./retry";
 
 // 合并时间窗：仅在最近这段时间内的同分类 Event 里寻找可合并目标。
 const MERGE_WINDOW_MS = 72 * 60 * 60 * 1000;
 
-export async function processClassify(data: ClassifyJobData): Promise<void> {
+export async function processClassify(data: ClassifyJobData, ctx?: RetryCtx): Promise<void> {
   const signal = await prisma.signal.findUnique({
     where: { id: data.signalId },
     include: { source: true },
@@ -93,7 +94,8 @@ export async function processClassify(data: ClassifyJobData): Promise<void> {
       where: { id: signal.id },
       data: { status: "classified", eventId: event.id, titleZh: result.titleZh },
     });
-  } catch {
+  } catch (e) {
+    if (shouldRetry(e, ctx)) throw e; // 瞬时错误（多为 DB 抖动）交 BullMQ 重试
     await prisma.signal.update({ where: { id: signal.id }, data: { status: "failed" } });
   }
 }
