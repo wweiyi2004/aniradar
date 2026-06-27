@@ -1,8 +1,9 @@
 import { Worker } from "bullmq";
 import { redisConnection } from "@aniradar/config";
-import { QUEUE_FETCH, QUEUE_CLASSIFY } from "@aniradar/shared";
+import { QUEUE_FETCH, QUEUE_CLASSIFY, QUEUE_REANALYZE } from "@aniradar/shared";
 import { processFetch } from "./processFetch";
 import { processClassify } from "./processClassify";
+import { processReanalyze } from "./processReanalyze";
 import { startScheduler } from "./scheduler";
 
 const fetchWorker = new Worker(
@@ -24,9 +25,14 @@ const classifyWorker = new Worker(
     }),
   { connection: redisConnection, concurrency: 1 },
 );
+const reanalyzeWorker = new Worker(QUEUE_REANALYZE, async (job) => processReanalyze(job.data), {
+  connection: redisConnection,
+  concurrency: 1,
+});
 
 fetchWorker.on("failed", (j, e) => console.error("fetch failed", j?.id, e?.message));
 classifyWorker.on("failed", (j, e) => console.error("classify failed", j?.id, e?.message));
+reanalyzeWorker.on("failed", (j, e) => console.error("reanalyze failed", j?.id, e?.message));
 
 const timer = startScheduler();
 console.log("AniRadar worker started");
@@ -35,6 +41,7 @@ async function shutdown() {
   clearInterval(timer);
   await fetchWorker.close();
   await classifyWorker.close();
+  await reanalyzeWorker.close();
   process.exit(0);
 }
 process.on("SIGINT", shutdown);
