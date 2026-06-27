@@ -43,7 +43,7 @@ export async function chatJson(
         ],
         response_format: { type: "json_object" },
         temperature: 0.2,
-        max_tokens: 500,
+        max_tokens: 900,
       }),
       signal: controller.signal,
     });

@@ -1,4 +1,4 @@
-import { EVENT_CATEGORIES, type EventCategory } from "@aniradar/shared";
+import { EVENT_CATEGORIES, type EventCategory, type Medium, MEDIUMS, mediumFromCategory } from "@aniradar/shared";
 import { classify } from "./classify";
 import { summarize } from "./summarize";
 import { getAiConfig, chatJson } from "./provider";
@@ -11,10 +11,13 @@ export interface AnalyzeInput {
 
 export interface AnalyzeResult {
   isAnimeNews: boolean;
+  medium: Medium;
   category: EventCategory;
   confidence: number;
   titleZh: string;
-  summaryZh: string;
+  leadZh: string;
+  summaryZh: string; // 兼容旧调用：与 leadZh 同值
+  facts: Record<string, unknown>;
   source: "ai" | "mock";
 }
 
@@ -34,10 +37,13 @@ function buildSystem(): string {
     "放送/配信日期、延期、剧场版/电影化、主题歌、活动信息、周边发售、BD/DVD 发售等官方/媒体情报。",
     "纯周边联名、广告、专栏、与动漫无关的内容判为非情报（isAnimeNews=false）。",
     transRule,
-    "summaryZh 要写成简体中文情报简报，180~280字，2~4句话；优先交代：公布了什么、作品/企划名、播出/上映/配信时间、制作/声优/主视觉/PV等关键信息。",
-    "不要只复述标题；不要写空泛评价；信息不足时说明“目前公开信息有限”，但仍基于标题/摘要/正文提炼已知事实。",
-    "只输出一个 JSON 对象，字段：",
-    "isAnimeNews(boolean), category(string), confidence(0~1 number), titleZh(string), summaryZh(string)。",
+    "leadZh 写成一句话简体中文导语（≤60字）：只讲“公布了什么”。",
+    "medium 从以下之一选，按“这条情报讲的是哪种媒介的动态”判断（动画化/PV/放送→anime，不看原作）：",
+    MEDIUMS.join(", ") + "。拿不准用 other。",
+    "facts 输出一个 JSON 对象，只填原文明确陈述的事实字段，未知字段直接省略，不要编造日期/人名。",
+    "facts 可用键（按需取）：work,original,studio,director,author,magazine,publisher,illustrator,label,platform,developer,genre,releaseDate,distributor,itemName,date,place,note,expectedAir,season,pvType,duration,pvUrl,kvDate,airDate,broadcaster,streaming,originalDate,newDate,reason,theaters,songType,songTitle,artist,eventName,eventDate,venue,price,spec,volume。",
+    "cast/staff 为数组，元素 {role,name}。",
+    "只输出一个 JSON 对象，字段：isAnimeNews(boolean), medium(string), category(string), confidence(0~1 number), titleZh(string), leadZh(string), facts(object)。",
     `category 必须是以下之一：${EVENT_CATEGORIES.join(", ")}。非情报时 category 用 "other"。`,
   ].join("");
 }
@@ -45,12 +51,16 @@ function buildSystem(): string {
 function mockAnalyze(input: AnalyzeInput): AnalyzeResult {
   const c = classify(input);
   const s = summarize(input);
+  const lead = s.summaryZh;
   return {
     isAnimeNews: c.isAnimeNews,
+    medium: mediumFromCategory(c.category),
     category: c.category,
     confidence: c.confidence,
     titleZh: s.titleZh,
-    summaryZh: s.summaryZh,
+    leadZh: lead,
+    summaryZh: lead,
+    facts: {},
     source: "mock",
   };
 }
@@ -76,14 +86,24 @@ export async function analyze(input: AnalyzeInput): Promise<AnalyzeResult> {
       : "other";
     const confidence = Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
     const titleZh = String(parsed.titleZh ?? input.title).trim() || input.title;
-    const summaryZh = String(parsed.summaryZh ?? "").trim() || (input.summary ?? "").trim();
+    const rawMedium = String(parsed.medium ?? "other");
+    const medium: Medium = (MEDIUMS as readonly string[]).includes(rawMedium)
+      ? (rawMedium as Medium)
+      : "other";
+    const leadZh = String(parsed.leadZh ?? parsed.summaryZh ?? "").trim() || (input.summary ?? "").trim();
+    const facts = (parsed.facts && typeof parsed.facts === "object" && !Array.isArray(parsed.facts))
+      ? (parsed.facts as Record<string, unknown>)
+      : {};
 
     return {
       isAnimeNews,
+      medium: isAnimeNews ? medium : "other",
       category: isAnimeNews ? category : "other",
       confidence,
       titleZh,
-      summaryZh,
+      leadZh,
+      summaryZh: leadZh,
+      facts: isAnimeNews ? facts : {},
       source: "ai",
     };
   } catch {

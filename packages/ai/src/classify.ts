@@ -5,8 +5,8 @@ import type { ClassifyResult, EventCategory } from "@aniradar/shared";
 const RULES: { keywords: string[]; category: EventCategory; confidence: number }[] = [
   { keywords: ["放送延期", "延期"], category: "delay_announced", confidence: 0.92 },
   { keywords: ["第2期", "第二期", "続編", "2期"], category: "sequel_announced", confidence: 0.92 },
-  { keywords: ["アニメ化", "制作決定", "新作アニメ"], category: "anime_adaptation", confidence: 0.93 },
   { keywords: ["劇場版", "映画化"], category: "movie_announced", confidence: 0.9 },
+  { keywords: ["アニメ化", "制作決定", "新作アニメ"], category: "anime_adaptation", confidence: 0.93 },
   {
     keywords: ["本PV", "ティザーPV", "ティザー", "特報", "予告", "PV公開", "PV"],
     category: "pv_released",
