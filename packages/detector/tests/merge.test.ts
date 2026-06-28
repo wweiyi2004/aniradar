@@ -41,4 +41,19 @@ describe("isSameEvent", () => {
     const b = { title: "新作アニメ制作決定のお知らせ", category: "anime_adaptation" };
     expect(isSameEvent(a, b)).toBe(true);
   });
+  it("作品名子变体（前缀）同分类 → 合并", () => {
+    const a = { title: "「鬼滅の刃」キービジュアル公開", category: "key_visual_released" };
+    const b = { title: "「鬼滅の刃 柱稽古編」キービジュアル解禁", category: "key_visual_released" };
+    expect(isSameEvent(a, b)).toBe(true);
+  });
+  it("一侧带「」、另一侧不带但标题含作品名 → 合并", () => {
+    const a = { title: "「呪術廻戦」本PV公開", category: "pv_released" };
+    const b = { title: "呪術廻戦 第2期 本PVが公開された", category: "pv_released" };
+    expect(isSameEvent(a, b)).toBe(true);
+  });
+  it("不同作品（前缀守卫不误伤短名）→ 不合并", () => {
+    const a = { title: "「PV」特集", category: "pv_released" };
+    const b = { title: "「PVアニメ大全」特集", category: "pv_released" };
+    expect(isSameEvent(a, b)).toBe(false);
+  });
 });

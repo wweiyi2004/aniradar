@@ -58,8 +58,19 @@ export function isSameEvent(
   const wa = extractWorkTitle(a.title);
   const wb = extractWorkTitle(b.title);
   if (wa && wb) {
-    if (normalize(wa) === normalize(wb)) return true;
+    const na = normalize(wa);
+    const nb = normalize(wb);
+    if (na === nb) return true;
+    // 子标题变体（「X」vs「X 第2期/柱稽古編」）：较短者是较长者前缀 → 同作品。
+    if (na.length >= 3 && nb.length >= 3 && (na.startsWith(nb) || nb.startsWith(na))) return true;
     return titleSimilarity(wa, wb) >= workThreshold;
+  }
+  // 仅一侧带「」作品名：若另一侧整标题包含该作品名，视为同作品（应对一源加括号、一源不加）。
+  const oneWork = wa ?? wb;
+  if (oneWork) {
+    const nw = normalize(oneWork);
+    const other = wa ? b.title : a.title;
+    if (nw.length >= 3 && normalize(other).includes(nw)) return true;
   }
   return titleSimilarity(a.title, b.title) >= titleThreshold;
 }
