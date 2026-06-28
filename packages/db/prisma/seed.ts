@@ -69,6 +69,31 @@ const sources: Prisma.SourceCreateInput[] = [
     fetchIntervalSec: 1200,
   },
   {
+    // 制作公司官网（发现层：原创企划 / 本社新作 / 主視覚解禁等首发）。2026-06 实测 RSS 可用。
+    name: "京都アニメーション",
+    url: "https://www.kyotoanimation.co.jp/information/rss.php",
+    type: "company_news",
+    level: "A",
+    fetchStrategy: "rss",
+    fetchIntervalSec: 1800,
+  },
+  {
+    name: "MAPPA",
+    url: "https://www.mappa.co.jp/feed/",
+    type: "company_news",
+    level: "A",
+    fetchStrategy: "rss",
+    fetchIntervalSec: 1800,
+  },
+  {
+    name: "CloverWorks",
+    url: "https://cloverworks.co.jp/news/feed/",
+    type: "company_news",
+    level: "A",
+    fetchStrategy: "rss",
+    fetchIntervalSec: 1800,
+  },
+  {
     // 映画.com アニメ News：服务端渲染列表页，selector 已实测可抽 20 条
     name: "映画.com アニメ (HTML)",
     url: "https://anime.eiga.com/news/",
@@ -91,6 +116,7 @@ const deprecatedUrls = [
   "https://www.animenewsnetwork.com/all/rss.xml",
   "https://example.com/news/",
   "https://example.com/ir/",
+  "https://cloverworks.co.jp/feed/", // 根 feed 为空，改用 /news/feed/
 ];
 
 async function main() {
