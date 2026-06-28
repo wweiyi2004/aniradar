@@ -6,7 +6,9 @@ import { CategoryBadge } from "@/components/category-badge";
 import { StatusBadge } from "@/components/status-badge";
 import { FactTable } from "@/components/fact-table";
 import { MediumBadge } from "@/components/medium-badge";
+import { YouTubeEmbed } from "@/components/youtube-embed";
 import { relTime } from "@/lib/format";
+import { youtubeId } from "@/lib/youtube";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +20,12 @@ export default async function EventDetail({ params }: { params: { id: string } }
   if (!ev) notFound();
 
   const multiSource = ev.signals.length > 1;
+  const ytId = youtubeId(ev.videoUrl);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <article className="min-w-0 space-y-5">
+        {ytId && <YouTubeEmbed id={ytId} title={ev.titleZh ?? ev.title} />}
         <div className="space-y-3 border-b pb-5">
           <div className="flex flex-wrap items-center gap-2">
             <MediumBadge medium={ev.medium} />
@@ -96,7 +100,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
       </article>
 
       <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-        {ev.imageUrl && (
+        {ev.imageUrl && !ytId && (
           <div className="overflow-hidden rounded-md border bg-[hsl(var(--muted))]">
             <img src={ev.imageUrl} alt="" className="aspect-[16/10] h-auto w-full object-cover" />
           </div>
