@@ -1,9 +1,16 @@
 import { prisma } from "@aniradar/db";
-import { analyze } from "@aniradar/ai";
+import { analyze, isAiConfigured } from "@aniradar/ai";
 import { buildEventFromSignal, isSameEvent } from "@aniradar/detector";
 import type { ClassifyJobData } from "@aniradar/shared";
 import { shouldRetry, type RetryCtx } from "./retry";
 import { mergeFacts } from "./facts";
+import { composeQueue } from "./queues";
+
+// 分类完成后入队“合成中文整合正文”（仅在配置了 AI 时）。
+async function enqueueCompose(eventId: string): Promise<void> {
+  if (!isAiConfigured()) return;
+  await composeQueue.add("compose", { eventId });
+}
 
 // 合并时间窗：仅在最近这段时间内的同分类 Event 里寻找可合并目标。
 const MERGE_WINDOW_MS = 72 * 60 * 60 * 1000;
@@ -81,13 +88,14 @@ export async function processClassify(data: ClassifyJobData, ctx?: RetryCtx): Pr
           data: { status: "classified", eventId: target.id, titleZh: result.titleZh, aiSource: result.source },
         });
       });
+      await enqueueCompose(target.id);
       return;
     }
 
     // 无可合并目标：新建 Event。事件创建 + signal 写放进同一事务：
     // 瞬时失败重试时整体回滚，避免重放产生重复事件。
-    await prisma.$transaction(async (tx) => {
-      const event = await tx.event.create({
+    const event = await prisma.$transaction(async (tx) => {
+      const ev = await tx.event.create({
         data: {
           title: built.title,
           titleZh: result.titleZh,
@@ -107,9 +115,11 @@ export async function processClassify(data: ClassifyJobData, ctx?: RetryCtx): Pr
       });
       await tx.signal.update({
         where: { id: signal.id },
-        data: { status: "classified", eventId: event.id, titleZh: result.titleZh, aiSource: result.source },
+        data: { status: "classified", eventId: ev.id, titleZh: result.titleZh, aiSource: result.source },
       });
+      return ev;
     });
+    await enqueueCompose(event.id);
   } catch (e) {
     if (shouldRetry(e, ctx)) throw e; // 瞬时错误（多为 DB 抖动）交 BullMQ 重试
     await prisma.signal.update({ where: { id: signal.id }, data: { status: "failed" } });

@@ -83,6 +83,7 @@ export interface ClassifyResult {
 export const QUEUE_FETCH = "fetch-source";
 export const QUEUE_CLASSIFY = "classify-signal";
 export const QUEUE_REANALYZE = "reanalyze-signal";
+export const QUEUE_COMPOSE = "compose-event";
 
 export interface FetchJobData {
   sourceId: string;
@@ -94,6 +95,10 @@ export interface ClassifyJobData {
 
 export interface ReanalyzeJobData {
   signalId: string;
+}
+
+export interface ComposeJobData {
+  eventId: string;
 }
 
 export { mediumFromCategory } from "./medium";

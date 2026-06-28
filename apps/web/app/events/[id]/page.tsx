@@ -50,6 +50,17 @@ export default async function EventDetail({ params }: { params: { id: string } }
           <FactTable medium={ev.medium} category={ev.category} facts={ev.facts} />
         </section>
 
+        {ev.bodyZh && (
+          <section className="space-y-2 rounded-md border bg-[hsl(var(--card))] p-4">
+            <h2 className="text-sm font-semibold text-[hsl(var(--muted-foreground))]">正文 · AI 整合译文</h2>
+            <div className="space-y-2 leading-7">
+              {ev.bodyZh
+                .split(/\n+/)
+                .map((p, i) => (p.trim() ? <p key={i}>{p.trim()}</p> : null))}
+            </div>
+          </section>
+        )}
+
         <section className="space-y-3">
           <h2 className="font-semibold">来源时间线（{ev.signals.length}）</h2>
           <ol className="relative ml-2 space-y-5 border-l border-[hsl(var(--border))]">

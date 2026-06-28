@@ -25,6 +25,7 @@ export async function chatJson(
   system: string,
   user: string,
   timeoutMs = 20_000,
+  maxTokens = 900,
 ): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -43,7 +44,7 @@ export async function chatJson(
         ],
         response_format: { type: "json_object" },
         temperature: 0.2,
-        max_tokens: 900,
+        max_tokens: maxTokens,
       }),
       signal: controller.signal,
     });

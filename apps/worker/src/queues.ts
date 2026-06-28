@@ -1,6 +1,6 @@
 import { Queue } from "bullmq";
 import { redisConnection } from "@aniradar/config";
-import { QUEUE_FETCH, QUEUE_CLASSIFY, QUEUE_REANALYZE } from "@aniradar/shared";
+import { QUEUE_FETCH, QUEUE_CLASSIFY, QUEUE_REANALYZE, QUEUE_COMPOSE } from "@aniradar/shared";
 
 export const fetchQueue = new Queue(QUEUE_FETCH, {
   connection: redisConnection,
@@ -27,5 +27,14 @@ export const reanalyzeQueue = new Queue(QUEUE_REANALYZE, {
     backoff: { type: "exponential", delay: 5000 },
     removeOnComplete: 200,
     removeOnFail: 200,
+  },
+});
+export const composeQueue = new Queue(QUEUE_COMPOSE, {
+  connection: redisConnection,
+  defaultJobOptions: {
+    attempts: 2,
+    backoff: { type: "exponential", delay: 5000 },
+    removeOnComplete: 300,
+    removeOnFail: 300,
   },
 });
