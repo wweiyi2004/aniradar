@@ -1,5 +1,5 @@
 import { prisma } from "@aniradar/db";
-import { analyze, isAiConfigured } from "@aniradar/ai";
+import { analyze, isAiConfigured, looksNonNews } from "@aniradar/ai";
 import { buildEventFromSignal, isSameEvent } from "@aniradar/detector";
 import type { ClassifyJobData } from "@aniradar/shared";
 import { shouldRetry, type RetryCtx } from "./retry";
@@ -23,6 +23,15 @@ export async function processClassify(data: ClassifyJobData, ctx?: RetryCtx): Pr
   if (!signal) return;
 
   try {
+    // 招聘/公司 HR 类明显非情报：调 AI 前直接判忽略，省调用、不污染情报流。
+    if (looksNonNews(signal.title)) {
+      await prisma.signal.update({
+        where: { id: signal.id },
+        data: { status: "ignored", titleZh: signal.title, aiSource: "mock" },
+      });
+      return;
+    }
+
     // 一次调用完成：是否动漫情报 + 分类 + 置信度 + 中文标题/摘要（无 key 时回退规则 mock）
     const result = await analyze({
       title: signal.title,
