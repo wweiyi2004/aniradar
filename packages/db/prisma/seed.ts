@@ -94,6 +94,36 @@ const sources: Prisma.SourceCreateInput[] = [
     fetchIntervalSec: 1800,
   },
   {
+    // ボンズ NEWS：WordPress 服务端渲染列表，2026-06 实测可抽（含 PV/配信等真情报）。
+    name: "ボンズ (Bones)",
+    url: "https://www.bones.co.jp/news/",
+    type: "company_news",
+    level: "A",
+    fetchStrategy: "html_list",
+    fetchIntervalSec: 1800,
+    selectorConfig: {
+      listItem: ".nws-List li",
+      title: ".title",
+      url: "a",
+      date: ".date",
+    },
+  },
+  {
+    // A-1 Pictures NEWS：服务端渲染列表，2026-06 实测可抽（当前多为採用情报，非情报会被分类忽略）。
+    name: "A-1 Pictures",
+    url: "https://a1p.jp/news/",
+    type: "company_news",
+    level: "A",
+    fetchStrategy: "html_list",
+    fetchIntervalSec: 1800,
+    selectorConfig: {
+      listItem: ".p-news__list li",
+      title: ".p-news__list-title",
+      url: "a",
+      date: ".p-in-date",
+    },
+  },
+  {
     // 映画.com アニメ News：服务端渲染列表页，selector 已实测可抽 20 条
     name: "映画.com アニメ (HTML)",
     url: "https://anime.eiga.com/news/",
