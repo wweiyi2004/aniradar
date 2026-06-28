@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import type { FetchedItem } from "@aniradar/shared";
+import { parseLooseDate } from "./date";
 
 export interface SelectorConfig {
   listItem: string;
@@ -24,8 +25,8 @@ export function parseHtmlList(html: string, cfg: SelectorConfig, baseUrl: string
       return;
     }
     const dateText = cfg.date ? node.find(cfg.date).first().text().trim() : "";
-    const d = dateText ? new Date(dateText) : undefined;
-    const valid = d && !isNaN(d.getTime());
+    const d = parseLooseDate(dateText);
+    const valid = !!d;
     out.push({
       title,
       url,
