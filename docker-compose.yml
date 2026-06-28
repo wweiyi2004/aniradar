@@ -11,6 +11,33 @@ services:
     image: redis:7-alpine
     ports: ["6379:6379"]
     volumes: ["aniradar_redis:/data"]
+
+  # 抓取/分类/合成 worker（常驻，崩溃自动重启）。
+  worker:
+    build:
+      context: .
+      target: worker
+    restart: unless-stopped
+    depends_on: [postgres, redis]
+    env_file: [.env]
+    environment:
+      # 容器网络内用服务名访问，覆盖 .env 里的 localhost。
+      DATABASE_URL: "postgresql://aniradar:aniradar@postgres:5432/aniradar?schema=public"
+      REDIS_URL: "redis://redis:6379"
+
+  # Next.js 前台（常驻，崩溃自动重启）。
+  web:
+    build:
+      context: .
+      target: web
+    restart: unless-stopped
+    depends_on: [postgres, redis]
+    ports: ["3000:3000"]
+    env_file: [.env]
+    environment:
+      DATABASE_URL: "postgresql://aniradar:aniradar@postgres:5432/aniradar?schema=public"
+      REDIS_URL: "redis://redis:6379"
+
 volumes:
   aniradar_pg:
   aniradar_redis:
