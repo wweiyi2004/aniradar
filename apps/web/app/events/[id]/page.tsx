@@ -33,7 +33,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
                 {ev.signals.length} 源聚合
               </Badge>
             )}
-            <span className="text-xs text-[hsl(var(--primary))]">{relTime(ev.firstSeenAt)}</span>
+            <span className="text-xs text-[hsl(var(--primary))]">{relTime(ev.publishedAt ?? ev.firstSeenAt)}</span>
             {ev.officialConfirmed && <span className="text-xs text-emerald-500">官方确认</span>}
           </div>
 
@@ -109,6 +109,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
               <span>{ev.signals.length} 个</span>
             </div>
             <div className="border-t pt-2 text-xs leading-5 text-[hsl(var(--muted-foreground))]">
+              {ev.publishedAt && <div>发布 {new Date(ev.publishedAt).toLocaleString("zh-CN")}</div>}
               首次发现 {new Date(ev.firstSeenAt).toLocaleString("zh-CN")}
             </div>
             {ev.videoUrl && (

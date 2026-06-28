@@ -20,6 +20,7 @@ export interface EventCardData {
   facts: unknown;
   status: string;
   firstSeenAt: Date;
+  publishedAt: Date | null;
   confidence: number;
   heatScore: number;
   officialConfirmed: boolean;
@@ -41,7 +42,7 @@ export function EventCard({ ev, highlight = false }: { ev: EventCardData; highli
       >
         <CardContent className="space-y-2.5 p-4">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-medium text-[hsl(var(--primary))]">{relTime(ev.firstSeenAt)}</span>
+            <span className="text-xs font-medium text-[hsl(var(--primary))]">{relTime(ev.publishedAt ?? ev.firstSeenAt)}</span>
             <MediumBadge medium={ev.medium} />
             <CategoryBadge category={ev.category} />
             <StatusBadge status={ev.status} />

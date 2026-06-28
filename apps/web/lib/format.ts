@@ -3,8 +3,8 @@ import { zhCN } from "date-fns/locale";
 
 export function relTime(d: Date): string {
   const diff = Date.now() - new Date(d).getTime();
-  if (diff < 60_000) return "刚刚发现";
-  return formatDistanceToNowStrict(new Date(d), { locale: zhCN, addSuffix: true }) + "发现";
+  if (diff < 60_000) return "刚刚";
+  return formatDistanceToNowStrict(new Date(d), { locale: zhCN, addSuffix: true });
 }
 
 export const CATEGORY_LABEL: Record<string, string> = {

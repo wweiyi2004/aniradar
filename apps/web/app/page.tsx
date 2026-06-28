@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const VISIBLE = ["auto_published", "published", "draft_ai"] as const;
 const SELECT = {
   id: true, title: true, titleZh: true, summaryZh: true, imageUrl: true, videoUrl: true,
-  category: true, medium: true, facts: true, status: true, firstSeenAt: true, confidence: true,
+  category: true, medium: true, facts: true, status: true, firstSeenAt: true, publishedAt: true, confidence: true,
   heatScore: true, officialConfirmed: true, _count: { select: { signals: true } },
 } as const;
 
@@ -19,7 +19,7 @@ export default async function Home({ searchParams }: { searchParams: { sort?: st
 
   const hotEvents = await prisma.event.findMany({
     where: { status: { in: [...VISIBLE] }, heatScore: { gt: 1 }, ...mediumWhere },
-    orderBy: [{ heatScore: "desc" }, { firstSeenAt: "desc" }],
+    orderBy: [{ heatScore: "desc" }, { publishedAt: "desc" }],
     take: 4,
     select: SELECT,
   });
@@ -27,7 +27,7 @@ export default async function Home({ searchParams }: { searchParams: { sort?: st
 
   const mainEvents = await prisma.event.findMany({
     where: { status: { in: [...VISIBLE] }, id: { notIn: hotIds }, ...mediumWhere },
-    orderBy: sort === "hot" ? [{ heatScore: "desc" }, { firstSeenAt: "desc" }] : [{ firstSeenAt: "desc" }],
+    orderBy: sort === "hot" ? [{ heatScore: "desc" }, { publishedAt: "desc" }] : [{ publishedAt: "desc" }, { firstSeenAt: "desc" }],
     take: 50,
     select: SELECT,
   });
@@ -61,11 +61,11 @@ export default async function Home({ searchParams }: { searchParams: { sort?: st
           <div>
             <h1 className="text-2xl font-bold">实时情报流</h1>
             <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
-              {sort === "hot" ? "按热度排序" : "按首次发现时间排序"} · 共 {mainEvents.length} 条
+              {sort === "hot" ? "按热度排序" : "按发布时间排序"} · 共 {mainEvents.length} 条
             </p>
           </div>
           <div className="flex gap-2">
-            <a href={sortHref("new")} className={"rounded-md px-3 py-1 text-sm " + (sort === "new" ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]" : "border text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]")}>最新发现</a>
+            <a href={sortHref("new")} className={"rounded-md px-3 py-1 text-sm " + (sort === "new" ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]" : "border text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]")}>最新</a>
             <a href={sortHref("hot")} className={"rounded-md px-3 py-1 text-sm " + (sort === "hot" ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]" : "border text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]")}>热度</a>
           </div>
         </div>

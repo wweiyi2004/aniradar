@@ -136,6 +136,7 @@ model Event {
   videoUrl          String?
   category          EventCategory
   firstSeenAt       DateTime      @default(now())
+  publishedAt       DateTime?
   confidence        Float         @default(0)
   heatScore         Float         @default(0)
   officialConfirmed Boolean       @default(false)
@@ -147,6 +148,7 @@ model Event {
   @@index([status])
   @@index([category])
   @@index([firstSeenAt])
+  @@index([publishedAt])
 }
 
 model FetchLog {

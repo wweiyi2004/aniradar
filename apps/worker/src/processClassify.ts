@@ -54,6 +54,9 @@ export async function processClassify(data: ClassifyJobData, ctx?: RetryCtx): Pr
       isSameEvent({ title: c.title, category: c.category }, { title: signal.title, category: result.category }),
     );
 
+    // 事件"出现时间"：优先用情报自带发布时间，缺失回退入库时间；合并时取更早者。
+    const sigPub = signal.publishedAt ?? signal.firstSeenAt;
+
     if (target) {
       // 合并：挂到既有事件，累加热度，必要时提升官方确认/置信度/状态。
       // 事件写 + signal 写放进同一事务：瞬时失败重试时整体回滚，避免重放导致热度重复累加。
@@ -69,6 +72,7 @@ export async function processClassify(data: ClassifyJobData, ctx?: RetryCtx): Pr
             videoUrl: target.videoUrl ?? signal.videoUrl,
             medium: target.medium ?? result.medium,
             facts: mergeFacts(target.facts, result.facts) as object,
+            publishedAt: target.publishedAt && target.publishedAt < sigPub ? target.publishedAt : sigPub,
             ...(upgradeToAuto ? { status: "auto_published" } : {}),
           },
         });
@@ -94,6 +98,7 @@ export async function processClassify(data: ClassifyJobData, ctx?: RetryCtx): Pr
           videoUrl: signal.videoUrl,
           category: built.category,
           firstSeenAt: built.firstSeenAt,
+          publishedAt: sigPub,
           confidence: built.confidence,
           officialConfirmed: built.officialConfirmed,
           status: built.status,
