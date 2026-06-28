@@ -27,6 +27,15 @@ export function SiteHeader() {
             抓取日志
           </Link>
         </nav>
+        <form action="/" method="get" className="shrink-0">
+          <input
+            type="search"
+            name="q"
+            placeholder="搜索作品/情报"
+            aria-label="搜索"
+            className="h-8 w-28 rounded-md border bg-transparent px-2 text-sm outline-none transition-all focus:border-[hsl(var(--primary))] sm:w-40 sm:focus:w-56"
+          />
+        </form>
         <ThemeToggle />
       </div>
     </header>

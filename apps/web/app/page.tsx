@@ -15,30 +15,53 @@ const SELECT = {
 
 const MEDIUM_ORDER = ["anime", "manga", "light_novel", "game", "film", "goods_event", "other"];
 
-export default async function Home({ searchParams }: { searchParams: { sort?: string; board?: string } }) {
+const PAGE_SIZE = 30;
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: { sort?: string; board?: string; q?: string; page?: string };
+}) {
   const sort = searchParams.sort === "hot" ? "hot" : "new";
   const board = searchParams.board;
+  const q = searchParams.q?.trim() || undefined;
+  const page = Math.max(1, Number(searchParams.page) || 1);
   const mediumWhere = board ? { medium: board } : {};
+  const searchWhere = q
+    ? {
+        OR: [
+          { title: { contains: q, mode: "insensitive" as const } },
+          { titleZh: { contains: q, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
-  const hotEvents = await prisma.event.findMany({
-    where: { status: { in: [...VISIBLE] }, heatScore: { gt: 1 }, ...mediumWhere },
-    orderBy: [{ heatScore: "desc" }, { publishedAt: "desc" }],
-    take: 4,
-    select: SELECT,
-  });
+  // 搜索态下不显示“热门置顶”，结果即纯搜索列表。
+  const hotEvents = q
+    ? []
+    : await prisma.event.findMany({
+        where: { status: { in: [...VISIBLE] }, heatScore: { gt: 1 }, ...mediumWhere },
+        orderBy: [{ heatScore: "desc" }, { publishedAt: "desc" }],
+        take: 4,
+        select: SELECT,
+      });
   const hotIds = hotEvents.map((e) => e.id);
 
-  const [mainEvents, heatTopRaw, mediumGroups, todayCount, sourceAgg] = await Promise.all([
+  const [mainEvents, totalMain, heatTopRaw, mediumGroups, todayCount, sourceAgg] = await Promise.all([
     prisma.event.findMany({
-      where: { status: { in: [...VISIBLE] }, id: { notIn: hotIds }, ...mediumWhere },
+      where: { status: { in: [...VISIBLE] }, id: { notIn: hotIds }, ...mediumWhere, ...searchWhere },
       orderBy:
         sort === "hot"
           ? [{ heatScore: "desc" }, { publishedAt: "desc" }]
           : [{ publishedAt: "desc" }, { firstSeenAt: "desc" }],
-      take: 50,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       select: SELECT,
+    }),
+    prisma.event.count({
+      where: { status: { in: [...VISIBLE] }, id: { notIn: hotIds }, ...mediumWhere, ...searchWhere },
     }),
     prisma.event.findMany({
       where: { status: { in: [...VISIBLE] }, heatScore: { gt: 1 }, ...mediumWhere },
@@ -68,11 +91,19 @@ export default async function Home({ searchParams }: { searchParams: { sort?: st
     .map((g) => ({ medium: g.medium as string, count: g._count }))
     .sort((a, b) => MEDIUM_ORDER.indexOf(a.medium) - MEDIUM_ORDER.indexOf(b.medium));
 
-  const sortHref = (key: "new" | "hot") => {
-    const b = board ? `board=${board}` : "";
-    if (key === "new") return b ? `/?${b}` : "/";
-    return b ? `/?${b}&sort=hot` : "/?sort=hot";
+  const totalPages = Math.max(1, Math.ceil(totalMain / PAGE_SIZE));
+  const buildHref = (over: { sort?: string; page?: number }) => {
+    const p = new URLSearchParams();
+    if (board) p.set("board", board);
+    if (q) p.set("q", q);
+    const s = over.sort ?? (sort === "hot" ? "hot" : undefined);
+    if (s) p.set("sort", s);
+    const pg = over.page ?? page;
+    if (pg > 1) p.set("page", String(pg));
+    const qs = p.toString();
+    return qs ? `/?${qs}` : "/";
   };
+  const sortHref = (key: "new" | "hot") => buildHref({ sort: key === "hot" ? "hot" : undefined, page: 1 });
 
   return (
     <div className="grid gap-6 lg:grid-cols-[170px_minmax(0,1fr)_280px]">
@@ -107,22 +138,43 @@ export default async function Home({ searchParams }: { searchParams: { sort?: st
         <section className="space-y-3">
           <div className="flex flex-wrap items-end justify-between gap-3 border-b pb-3">
             <div>
-              <h1 className="text-2xl font-bold">实时情报流</h1>
+              <h1 className="text-2xl font-bold">{q ? `搜索：${q}` : "实时情报流"}</h1>
               <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
-                {sort === "hot" ? "按热度排序" : "按发布时间排序"} · 共 {mainEvents.length} 条
+                {q ? "匹配标题/译文" : sort === "hot" ? "按热度排序" : "按发布时间排序"} · 共 {totalMain} 条
+                {totalPages > 1 ? ` · 第 ${page}/${totalPages} 页` : ""}
               </p>
             </div>
-            <div className="flex gap-2">
-              <a href={sortHref("new")} className={"rounded-md px-3 py-1 text-sm " + (sort === "new" ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]" : "border text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]")}>最新</a>
-              <a href={sortHref("hot")} className={"rounded-md px-3 py-1 text-sm " + (sort === "hot" ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]" : "border text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]")}>热度</a>
-            </div>
+            {!q && (
+              <div className="flex gap-2">
+                <a href={sortHref("new")} className={"rounded-md px-3 py-1 text-sm " + (sort === "new" ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]" : "border text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]")}>最新</a>
+                <a href={sortHref("hot")} className={"rounded-md px-3 py-1 text-sm " + (sort === "hot" ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]" : "border text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]")}>热度</a>
+              </div>
+            )}
           </div>
           {mainEvents.length === 0 && (
-            <p className="text-[hsl(var(--muted-foreground))]">该板块暂无情报。</p>
+            <p className="text-[hsl(var(--muted-foreground))]">
+              {q ? "没有匹配的情报。" : "该板块暂无情报。"}
+            </p>
           )}
           {mainEvents.map((ev) => (
             <EventCard key={ev.id} ev={ev} />
           ))}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t pt-4 text-sm">
+              {page > 1 ? (
+                <a href={buildHref({ page: page - 1 })} className="rounded-md border px-3 py-1.5 hover:bg-[hsl(var(--muted))]">← 上一页</a>
+              ) : (
+                <span className="rounded-md border px-3 py-1.5 text-[hsl(var(--muted-foreground))] opacity-50">← 上一页</span>
+              )}
+              <span className="text-[hsl(var(--muted-foreground))]">第 {page} / {totalPages} 页</span>
+              {page < totalPages ? (
+                <a href={buildHref({ page: page + 1 })} className="rounded-md border px-3 py-1.5 hover:bg-[hsl(var(--muted))]">下一页 →</a>
+              ) : (
+                <span className="rounded-md border px-3 py-1.5 text-[hsl(var(--muted-foreground))] opacity-50">下一页 →</span>
+              )}
+            </div>
+          )}
         </section>
       </div>
 
