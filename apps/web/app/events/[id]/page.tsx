@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
     where: { id: params.id },
     select: { title: true, titleZh: true, summaryZh: true, imageUrl: true },
   });
-  if (!ev) return { title: "情报未找到 · AniRadar" };
+  if (!ev) notFound();
   const title = `${ev.titleZh || ev.title} · AniRadar`;
   const description = (ev.summaryZh || ev.titleZh || ev.title).slice(0, 120);
   return {
