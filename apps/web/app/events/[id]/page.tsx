@@ -12,6 +12,10 @@ import { youtubeId } from "@/lib/youtube";
 
 export const dynamic = "force-dynamic";
 
+// 注：缺失事件会调 notFound() 渲染站点风格的 not-found UI；但在 Next 14 app-router
+// 动态路由下，notFound() 的 HTTP 状态仍为 200（已知限制，实测 force-dynamic 与 auto 均如此）。
+// 用户体验正确，仅对爬虫的状态码语义有影响，影响轻微。
+
 export async function generateMetadata({ params }: { params: { id: string } }) {
   const ev = await prisma.event.findUnique({
     where: { id: params.id },
