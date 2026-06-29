@@ -12,6 +12,31 @@ import { youtubeId } from "@/lib/youtube";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({ params }: { params: { id: string } }) {
+  const ev = await prisma.event.findUnique({
+    where: { id: params.id },
+    select: { title: true, titleZh: true, summaryZh: true, imageUrl: true },
+  });
+  if (!ev) return { title: "情报未找到 · AniRadar" };
+  const title = `${ev.titleZh || ev.title} · AniRadar`;
+  const description = (ev.summaryZh || ev.titleZh || ev.title).slice(0, 120);
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      images: ev.imageUrl ? [{ url: ev.imageUrl }] : undefined,
+    },
+    twitter: {
+      card: ev.imageUrl ? "summary_large_image" : "summary",
+      title,
+      description,
+    },
+  };
+}
+
 export default async function EventDetail({ params }: { params: { id: string } }) {
   const ev = await prisma.event.findUnique({
     where: { id: params.id },
@@ -102,7 +127,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
       <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
         {ev.imageUrl && !ytId && (
           <div className="overflow-hidden rounded-md border bg-[hsl(var(--muted))]">
-            <img src={ev.imageUrl} alt="" className="aspect-[16/10] h-auto w-full object-cover" />
+            <img src={ev.imageUrl} alt={ev.titleZh || ev.title} className="aspect-[16/10] h-auto w-full object-cover" />
           </div>
         )}
         <section className="rounded-md border bg-[hsl(var(--card))] p-4">
