@@ -1,7 +1,15 @@
 # 单镜像构建 monorepo，拆 worker/web 两个 target。
 # 保留 devDependencies：worker 运行依赖 tsx；web 构建依赖 next/typescript。
-FROM node:22-slim AS base
-RUN corepack enable
+# 固定 Node 小版本，避免浮动标签更新引入行为变化；pnpm 11 需要 >=22.13。
+FROM node:22.13.1-slim AS base
+# WSL2 5.15 内核的 io_uring 有 bug，Node 20+ 默认启用会随机 SIGSEGV，显式禁用。
+ENV UV_USE_IO_URING=0
+# 容器内无宿主机代理，直连 npmjs/prisma 官方源会挂起甚至压崩 Node（下载中被重置），
+# 一律走 npmmirror；外网通畅的环境可用 --build-arg NPM_REGISTRY=https://registry.npmjs.org 覆盖。
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+ENV PRISMA_ENGINES_MIRROR=https://registry.npmmirror.com/-/binary/prisma
+# 不用 corepack（其下载 pnpm 无法走镜像），npm 全局安装同版本 pnpm。
+RUN npm i -g pnpm@11.5.2 --registry=$NPM_REGISTRY
 WORKDIR /app
 # Prisma 引擎需要 openssl
 RUN apt-get update \
@@ -10,7 +18,7 @@ RUN apt-get update \
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps ./apps
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --registry=$NPM_REGISTRY
 RUN pnpm --filter @aniradar/db exec prisma generate
 ENV NODE_ENV=production
 

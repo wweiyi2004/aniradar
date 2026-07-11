@@ -7,10 +7,40 @@ services:
       POSTGRES_DB: aniradar
     ports: ["5433:5432"]
     volumes: ["aniradar_pg:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aniradar -d aniradar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   redis:
     image: redis:7-alpine
     ports: ["6379:6379"]
     volumes: ["aniradar_redis:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 一次性初始化：建表(migrate deploy) + 幂等写入种子源，成功退出后 worker/web 才启动。
+  migrate:
+    build:
+      context: .
+      target: worker
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: [.env]
+    environment:
+      DATABASE_URL: "postgresql://aniradar:aniradar@postgres:5432/aniradar?schema=public"
+      REDIS_URL: "redis://redis:6379"
+    command:
+      [
+        "sh",
+        "-c",
+        "pnpm --filter @aniradar/db exec prisma migrate deploy && pnpm --filter @aniradar/db exec tsx prisma/seed.ts",
+      ]
 
   # 抓取/分类/合成 worker（常驻，崩溃自动重启）。
   worker:
@@ -18,7 +48,13 @@ services:
       context: .
       target: worker
     restart: unless-stopped
-    depends_on: [postgres, redis]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     env_file: [.env]
     environment:
       # 容器网络内用服务名访问，覆盖 .env 里的 localhost。
@@ -31,7 +67,13 @@ services:
       context: .
       target: web
     restart: unless-stopped
-    depends_on: [postgres, redis]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports: ["3000:3000"]
     env_file: [.env]
     environment:
