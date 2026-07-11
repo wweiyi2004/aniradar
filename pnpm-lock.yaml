@@ -138,6 +138,9 @@ importers:
       '@aniradar/config':
         specifier: workspace:*
         version: link:../config
+      '@aniradar/shared':
+        specifier: workspace:*
+        version: link:../shared
       undici:
         specifier: ^6.21.0
         version: 6.27.0
@@ -147,6 +150,9 @@ importers:
       '@aniradar/shared':
         specifier: workspace:*
         version: link:../shared
+      '@aniradar/sources':
+        specifier: workspace:*
+        version: link:../sources
       '@prisma/client':
         specifier: ^5.20.0
         version: 5.20.0(prisma@5.20.0)

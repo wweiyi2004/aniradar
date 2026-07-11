@@ -4,8 +4,13 @@
   "type": "module",
   "main": "src/index.ts",
   "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
   "dependencies": {
     "@aniradar/config": "workspace:*",
+    "@aniradar/shared": "workspace:*",
     "undici": "^6.21.0"
   }
 }

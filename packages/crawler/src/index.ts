@@ -1,5 +1,6 @@
 import { fetch as undiciFetch, Agent, ProxyAgent, type Dispatcher } from "undici";
 import { env } from "@aniradar/config";
+import { validateSourceUrl } from "@aniradar/shared";
 
 export interface FetchUrlResult {
   status: number;
@@ -34,13 +35,19 @@ export async function fetchUrl(
   url: string,
   opts: { etag?: string; lastModified?: string; timeoutMs?: number } = {},
 ): Promise<FetchUrlResult> {
+  // 统一 SSRF 门禁：后台入库校验之外，运行时再挡一次（含种子/历史脏数据）。
+  const urlCheck = validateSourceUrl(url);
+  if (!urlCheck.ok) {
+    throw new Error(`blocked url: ${urlCheck.error}`);
+  }
+  const safeUrl = urlCheck.url;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? env.crawlerTimeoutMs);
   try {
     const headers: Record<string, string> = { ...DEFAULT_HEADERS, "user-agent": env.userAgent };
     if (opts.etag) headers["if-none-match"] = opts.etag;
     if (opts.lastModified) headers["if-modified-since"] = opts.lastModified;
-    const res = await undiciFetch(url, {
+    const res = await undiciFetch(safeUrl, {
       headers,
       signal: controller.signal,
       redirect: "follow",
