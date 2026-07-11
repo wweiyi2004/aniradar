@@ -19,6 +19,25 @@ const RULES: { keywords: string[]; category: EventCategory; confidence: number }
   { keywords: ["主題歌", "OP", "ED"], category: "theme_song_announced", confidence: 0.8 },
 ];
 
+// 动漫语境词：media/press 这类全量资讯源（音乐/电影媒体）里，J-pop 新曲 MV、真人电影的
+// “放送/キャスト/主題歌”会命中上面的分类词。要求同时出现动漫语境词才放行，官方源（动画公司/
+// 厂牌自己的 news/YouTube）天然在语境内，豁免。
+const ANIME_CONTEXT_KEYWORDS = [
+  "アニメ",
+  "劇場版",
+  "OVA",
+  "声優",
+  "コミック",
+  "漫画",
+  "マンガ",
+  "ラノベ",
+  "ライトノベル",
+  "原作",
+];
+
+// 仅这两类源要求动漫语境词（全量音乐/电影/综合媒体 feed）。
+const CONTEXT_REQUIRED_SOURCE_TYPES = ["media", "press"];
+
 // 拉丁字母关键词（OP/ED/PV/CM）需词边界匹配，避免命中英文单词内部
 // （如 "OP" 命中 "OPAQUE"、"ED" 命中 "LIMITED"）。日文关键词用子串匹配。
 function matchesKeyword(text: string, kw: string): boolean {
@@ -29,8 +48,17 @@ function matchesKeyword(text: string, kw: string): boolean {
   return text.includes(kw);
 }
 
-export function classify(input: { title: string; summary?: string; rawText?: string }): ClassifyResult {
+export function classify(input: {
+  title: string;
+  summary?: string;
+  rawText?: string;
+  sourceType?: string;
+}): ClassifyResult {
   const text = `${input.title}\n${input.summary ?? ""}\n${input.rawText ?? ""}`;
+  const needsContext = CONTEXT_REQUIRED_SOURCE_TYPES.includes(input.sourceType ?? "");
+  if (needsContext && !ANIME_CONTEXT_KEYWORDS.some((k) => matchesKeyword(text, k))) {
+    return { isAnimeNews: false, category: "other", confidence: 0.3 };
+  }
   for (const rule of RULES) {
     if (rule.keywords.some((k) => matchesKeyword(text, k))) {
       return { isAnimeNews: true, category: rule.category, confidence: rule.confidence };

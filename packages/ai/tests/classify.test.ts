@@ -29,3 +29,27 @@ describe("classify", () => {
     expect(classify({ title: "ノンクレジットOP 公開" }).category).toBe("theme_song_announced");
   });
 });
+
+describe("classify · media/press 源要求动漫语境词", () => {
+  it("media 源纯 J-pop 新曲 MV → 非情报（无动漫语境词）", () => {
+    const r = classify({ title: "新曲「Blue Shining Star」ミュージックビデオ公開", sourceType: "media" });
+    expect(r.isAnimeNews).toBe(false);
+  });
+  it("media 源真人电影放送 → 非情报", () => {
+    const r = classify({ title: "主演映画「黒蜥蜴」がNHKで放送", sourceType: "media" });
+    expect(r.isAnimeNews).toBe(false);
+  });
+  it("media 源动画主题歌（含アニメ语境词）→ 情报", () => {
+    const r = classify({ title: "TVアニメ「落第賢者」OP主題歌が配信リリース", sourceType: "media" });
+    expect(r.isAnimeNews).toBe(true);
+    expect(r.category).toBe("theme_song_announced");
+  });
+  it("官方源（official_news）无语境词也放行", () => {
+    const r = classify({ title: "本PV公開", sourceType: "official_news" });
+    expect(r.isAnimeNews).toBe(true);
+    expect(r.category).toBe("pv_released");
+  });
+  it("不带 sourceType（旧调用）保持原行为", () => {
+    expect(classify({ title: "第2期制作決定" }).isAnimeNews).toBe(true);
+  });
+});
