@@ -13,7 +13,7 @@ export function ThemeToggle() {
     <button
       aria-label="切换主题"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-[hsl(var(--muted))]"
+      className="flex h-9 w-9 items-center justify-center rounded-full border bg-transparent hover:bg-muted"
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>

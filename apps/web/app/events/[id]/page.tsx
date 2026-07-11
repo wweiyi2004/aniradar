@@ -1,7 +1,7 @@
 import { prisma } from "@aniradar/db";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { Flame, PlayCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { CategoryBadge } from "@/components/category-badge";
 import { StatusBadge } from "@/components/status-badge";
 import { FactTable } from "@/components/fact-table";
@@ -9,6 +9,7 @@ import { MediumBadge } from "@/components/medium-badge";
 import { YouTubeEmbed } from "@/components/youtube-embed";
 import { relTime } from "@/lib/format";
 import { youtubeId } from "@/lib/youtube";
+import { getPublicEventStatuses } from "@/lib/public-status";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +18,9 @@ export const dynamic = "force-dynamic";
 // 用户体验正确，仅对爬虫的状态码语义有影响，影响轻微。
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
-  const ev = await prisma.event.findUnique({
-    where: { id: params.id },
+  const publicStatus = [...getPublicEventStatuses()];
+  const ev = await prisma.event.findFirst({
+    where: { id: params.id, status: { in: publicStatus } },
     select: { title: true, titleZh: true, summaryZh: true, imageUrl: true },
   });
   if (!ev) notFound();
@@ -41,52 +43,88 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
   };
 }
 
+const SECTION_HEAD = "border-b pb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground";
+
 export default async function EventDetail({ params }: { params: { id: string } }) {
-  const ev = await prisma.event.findUnique({
-    where: { id: params.id },
+  const publicStatus = [...getPublicEventStatuses()];
+  const ev = await prisma.event.findFirst({
+    where: { id: params.id, status: { in: publicStatus } },
     include: { signals: { include: { source: true }, orderBy: { firstSeenAt: "asc" } } },
   });
   if (!ev) notFound();
 
-  const multiSource = ev.signals.length > 1;
+  // 同作品其他情报：按 AI 抽取的结构化作品名（facts.work）精确匹配。
+  const work = (() => {
+    const w = (ev.facts as Record<string, unknown> | null)?.work;
+    return typeof w === "string" && w.trim() ? w.trim() : null;
+  })();
+  const related = work
+    ? await prisma.event.findMany({
+        where: {
+          id: { not: ev.id },
+          status: { in: publicStatus },
+          facts: { path: ["work"], equals: work },
+        },
+        orderBy: [{ publishedAt: { sort: "desc", nulls: "last" } }, { firstSeenAt: "desc" }],
+        take: 6,
+        select: { id: true, title: true, titleZh: true, category: true, publishedAt: true, firstSeenAt: true },
+      })
+    : [];
+
   const ytId = youtubeId(ev.videoUrl);
+  const isPublic = ev.status === "published" || ev.status === "auto_published";
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <article className="min-w-0 space-y-5">
-        {ytId && <YouTubeEmbed id={ytId} title={ev.titleZh ?? ev.title} />}
-        <div className="space-y-3 border-b pb-5">
+    <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <article className="min-w-0 max-w-3xl space-y-6">
+        <header className="space-y-3 border-b pb-6">
           <div className="flex flex-wrap items-center gap-2">
-            <MediumBadge medium={ev.medium} />
             <CategoryBadge category={ev.category} />
-            <StatusBadge status={ev.status} />
-            {multiSource && (
-              <Badge className="gap-1 border-orange-500 text-orange-500">
-                <Flame className="h-3 w-3" />
-                {ev.signals.length} 源聚合
-              </Badge>
+            <MediumBadge medium={ev.medium} />
+            {ev.officialConfirmed && (
+              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">官方确认</span>
             )}
-            <span className="text-xs text-[hsl(var(--primary))]">{relTime(ev.publishedAt ?? ev.firstSeenAt)}</span>
-            {ev.officialConfirmed && <span className="text-xs text-emerald-500">官方确认</span>}
+            {!isPublic && <StatusBadge status={ev.status} />}
           </div>
 
-          <h1 className="text-2xl font-bold leading-9 tracking-normal sm:text-3xl sm:leading-10">
+          <h1 className="font-display text-3xl font-bold leading-tight sm:text-4xl">
             {ev.titleZh || ev.title}
           </h1>
           {ev.titleZh && ev.title !== ev.titleZh && (
-            <p className="text-sm leading-6 text-[hsl(var(--muted-foreground))]">原标题：{ev.title}</p>
+            <p className="text-sm leading-6 text-muted-foreground">原标题：{ev.title}</p>
           )}
-        </div>
 
-        <section className="space-y-4 rounded-md border bg-[hsl(var(--card))] p-4">
-          <p className="leading-7">{ev.summaryZh || "（暂无导语）"}</p>
+          <p className="font-mono text-xs text-muted-foreground">
+            发布 {relTime(ev.publishedAt ?? ev.firstSeenAt)} · {ev.signals.length} 个来源 · 置信度{" "}
+            {(ev.confidence * 100).toFixed(0)}% · 热度 {ev.heatScore}
+          </p>
+        </header>
+
+        {ytId ? (
+          <YouTubeEmbed id={ytId} title={ev.titleZh ?? ev.title} />
+        ) : (
+          ev.imageUrl && (
+            <figure>
+              <img
+                src={ev.imageUrl}
+                alt={ev.titleZh || ev.title}
+                className="w-full rounded-xl object-cover"
+              />
+            </figure>
+          )
+        )}
+
+        <p className="text-lg leading-8">{ev.summaryZh || "（暂无导语）"}</p>
+
+        <section className="space-y-4 rounded-lg bg-muted/50 p-5">
+          <h2 className={SECTION_HEAD}>情报速览</h2>
           <FactTable medium={ev.medium} category={ev.category} facts={ev.facts} />
         </section>
 
         {ev.bodyZh && (
-          <section className="space-y-2 rounded-md border bg-[hsl(var(--card))] p-4">
-            <h2 className="text-sm font-semibold text-[hsl(var(--muted-foreground))]">正文 · AI 整合译文</h2>
-            <div className="space-y-2 leading-7">
+          <section className="space-y-4">
+            <h2 className={SECTION_HEAD}>正文 · AI 整合译文</h2>
+            <div className="space-y-4 text-[17px] leading-8">
               {ev.bodyZh
                 .split(/\n+/)
                 .map((p, i) => (p.trim() ? <p key={i}>{p.trim()}</p> : null))}
@@ -94,31 +132,33 @@ export default async function EventDetail({ params }: { params: { id: string } }
           </section>
         )}
 
-        <section className="space-y-3">
-          <h2 className="font-semibold">来源时间线（{ev.signals.length}）</h2>
-          <ol className="relative ml-2 space-y-5 border-l border-[hsl(var(--border))]">
+        <section className="space-y-5">
+          <h2 className={SECTION_HEAD}>来源时间线（{ev.signals.length}）</h2>
+          <ol className="relative ml-2 space-y-6 border-l">
             {ev.signals.map((s) => (
-              <li key={s.id} className="relative ml-5">
-                <span className="absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-[hsl(var(--background))] bg-[hsl(var(--primary))]" />
-                <div className="text-xs text-[hsl(var(--muted-foreground))]">
-                  <span className="font-medium text-[hsl(var(--foreground))]">{s.source.name}</span>
+              <li key={s.id} className="relative ml-6">
+                <span className="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">{s.source.name}</span>
                   {" · "}
-                  {s.publishedAt ? `发布 ${new Date(s.publishedAt).toLocaleString("zh-CN")} · ` : ""}
-                  {relTime(s.firstSeenAt)}
+                  <span className="font-mono">
+                    {s.publishedAt ? `发布 ${new Date(s.publishedAt).toLocaleString("zh-CN")} · ` : ""}
+                    {relTime(s.firstSeenAt)}
+                  </span>
                 </div>
                 <a
                   href={s.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1 block font-medium leading-6 text-[hsl(var(--primary))] hover:underline"
+                  className="mt-1 block font-medium leading-6 text-primary hover:underline"
                 >
                   {s.titleZh || s.title}
                 </a>
                 {s.titleZh && s.titleZh !== s.title && (
-                  <div className="text-xs leading-5 text-[hsl(var(--muted-foreground))]">{s.title}</div>
+                  <div className="text-xs leading-5 text-muted-foreground">{s.title}</div>
                 )}
                 {(s.rawText || s.summary) && (
-                  <p className="mt-2 line-clamp-4 max-w-3xl text-sm leading-6 text-[hsl(var(--muted-foreground))]">
+                  <p className="mt-2 line-clamp-4 max-w-3xl text-sm leading-6 text-muted-foreground">
                     {s.rawText || s.summary}
                   </p>
                 )}
@@ -126,33 +166,49 @@ export default async function EventDetail({ params }: { params: { id: string } }
             ))}
           </ol>
         </section>
+
+        {related.length > 0 && (
+          <section className="space-y-4">
+            <h2 className={SECTION_HEAD}>同作品情报 · {work}</h2>
+            <ul className="space-y-3">
+              {related.map((r) => (
+                <li key={r.id}>
+                  <Link href={`/events/${r.id}`} className="group flex items-baseline gap-3">
+                    <CategoryBadge category={r.category} />
+                    <span className="min-w-0 flex-1 truncate font-medium group-hover:text-primary">
+                      {r.titleZh || r.title}
+                    </span>
+                    <time className="shrink-0 font-mono text-xs text-muted-foreground">
+                      {relTime(r.publishedAt ?? r.firstSeenAt)}
+                    </time>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </article>
 
       <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-        {ev.imageUrl && !ytId && (
-          <div className="overflow-hidden rounded-md border bg-[hsl(var(--muted))]">
-            <img src={ev.imageUrl} alt={ev.titleZh || ev.title} className="aspect-[16/10] h-auto w-full object-cover" />
-          </div>
-        )}
-        <section className="rounded-md border bg-[hsl(var(--card))] p-4">
-          <h2 className="mb-3 text-sm font-semibold text-[hsl(var(--muted-foreground))]">情报状态</h2>
-          <div className="space-y-2 text-sm">
+        <section className="rounded-lg border bg-card p-5">
+          <h2 className={`${SECTION_HEAD} mb-3`}>情报状态</h2>
+          <div className="space-y-2.5 text-sm">
             <div className="flex justify-between gap-3">
-              <span className="text-[hsl(var(--muted-foreground))]">热度</span>
-              <span className="inline-flex items-center gap-1">
+              <span className="text-muted-foreground">热度</span>
+              <span className="inline-flex items-center gap-1 font-mono">
                 <Flame className="h-3 w-3 text-orange-500" />
                 {ev.heatScore}
               </span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-[hsl(var(--muted-foreground))]">置信度</span>
-              <span>{(ev.confidence * 100).toFixed(0)}%</span>
+              <span className="text-muted-foreground">置信度</span>
+              <span className="font-mono">{(ev.confidence * 100).toFixed(0)}%</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-[hsl(var(--muted-foreground))]">来源</span>
-              <span>{ev.signals.length} 个</span>
+              <span className="text-muted-foreground">来源</span>
+              <span className="font-mono">{ev.signals.length} 个</span>
             </div>
-            <div className="border-t pt-2 text-xs leading-5 text-[hsl(var(--muted-foreground))]">
+            <div className="border-t pt-2.5 font-mono text-xs leading-5 text-muted-foreground">
               {ev.publishedAt && <div>发布 {new Date(ev.publishedAt).toLocaleString("zh-CN")}</div>}
               首次发现 {new Date(ev.firstSeenAt).toLocaleString("zh-CN")}
             </div>
@@ -161,7 +217,7 @@ export default async function EventDetail({ params }: { params: { id: string } }
                 href={ev.videoUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-sm text-[hsl(var(--primary))] hover:underline"
+                className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
               >
                 <PlayCircle className="h-4 w-4" />
                 打开视频

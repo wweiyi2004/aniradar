@@ -3,27 +3,38 @@
 @tailwind utilities;
 
 :root {
-  --background: 210 40% 98%;
+  --background: 0 0% 100%;
   --foreground: 222 47% 11%;
   --card: 0 0% 100%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
-  --border: 214 32% 91%;
-  --primary: 199 89% 48%;
+  --card-foreground: 222 47% 11%;
+  --muted: 220 14% 96%;
+  --muted-foreground: 220 9% 40%;
+  --border: 220 13% 90%;
+  --primary: 16 85% 43%;
   --primary-foreground: 0 0% 100%;
-  --accent: 173 80% 40%;
+  --secondary: 220 14% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --accent: 199 89% 38%;
+  --accent-foreground: 0 0% 100%;
+  --ring: 16 85% 43%;
+  --radius: 0.75rem;
 }
 
 .dark {
-  --background: 222 47% 7%;
-  --foreground: 210 40% 96%;
-  --card: 222 40% 11%;
-  --muted: 217 33% 17%;
-  --muted-foreground: 215 20% 65%;
-  --border: 217 33% 20%;
-  --primary: 199 89% 55%;
-  --primary-foreground: 222 47% 7%;
-  --accent: 173 80% 45%;
+  --background: 224 22% 7%;
+  --foreground: 220 20% 93%;
+  --card: 224 20% 10%;
+  --card-foreground: 220 20% 93%;
+  --muted: 223 16% 15%;
+  --muted-foreground: 220 10% 66%;
+  --border: 223 14% 20%;
+  --primary: 18 90% 60%;
+  --primary-foreground: 224 22% 7%;
+  --secondary: 223 16% 15%;
+  --secondary-foreground: 220 20% 93%;
+  --accent: 193 80% 55%;
+  --accent-foreground: 224 22% 7%;
+  --ring: 18 90% 60%;
 }
 
 * {
@@ -35,9 +46,15 @@ body {
   color: hsl(var(--foreground));
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
 }

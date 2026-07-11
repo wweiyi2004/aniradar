@@ -4,16 +4,15 @@ import { Radar } from "lucide-react";
 export default function NotFound() {
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 text-center">
-      <Radar className="h-12 w-12 text-[hsl(var(--muted-foreground))]" />
+      <p className="font-display text-8xl font-bold leading-none text-muted-foreground/25">404</p>
+      <Radar className="h-10 w-10 text-muted-foreground" />
       <div>
-        <h1 className="text-2xl font-bold">情报未找到</h1>
-        <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
-          这条情报可能已被合并或撤回。
-        </p>
+        <h1 className="font-display text-3xl font-bold">情报未找到</h1>
+        <p className="mt-2 text-sm text-muted-foreground">这条情报可能已被合并或撤回。</p>
       </div>
       <Link
         href="/"
-        className="rounded-md bg-[hsl(var(--primary))] px-4 py-2 text-sm text-[hsl(var(--primary-foreground))]"
+        className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
       >
         返回情报流
       </Link>

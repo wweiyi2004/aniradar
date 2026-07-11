@@ -9,7 +9,7 @@ export function Table({ className, ...p }: React.HTMLAttributes<HTMLTableElement
 }
 
 export function THead({ className, ...p }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn("text-left text-[hsl(var(--muted-foreground))]", className)} {...p} />;
+  return <thead className={cn("text-left text-muted-foreground", className)} {...p} />;
 }
 
 export function TBody(p: React.HTMLAttributes<HTMLTableSectionElement>) {

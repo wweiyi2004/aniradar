@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { Flame } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { CategoryBadge } from "./category-badge";
 import { MediumBadge } from "./medium-badge";
-import { StatusBadge } from "./status-badge";
-import { relTime } from "@/lib/format";
+import { relTime, CATEGORY_LABEL } from "@/lib/format";
 import { buildFactRows } from "@/lib/facts";
 
 export interface EventCardData {
@@ -27,54 +24,149 @@ export interface EventCardData {
   _count: { signals: number };
 }
 
-export function EventCard({ ev, highlight = false }: { ev: EventCardData; highlight?: boolean }) {
-  const multiSource = ev._count.signals > 1;
+const MEDIUM_BAR: Record<string, string> = {
+  anime: "bg-sky-500",
+  manga: "bg-violet-500",
+  light_novel: "bg-emerald-500",
+  game: "bg-amber-500",
+  film: "bg-rose-500",
+  goods_event: "bg-teal-500",
+  other: "bg-muted-foreground",
+};
+
+function Kicker({ ev }: { ev: EventCardData }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+      <CategoryBadge category={ev.category} />
+      <MediumBadge medium={ev.medium} />
+      <time className="font-mono">{relTime(ev.publishedAt ?? ev.firstSeenAt)}</time>
+      {ev._count.signals > 1 && (
+        <span className="inline-flex items-center gap-0.5 font-medium text-orange-600 dark:text-orange-400">
+          <Flame className="h-3 w-3" />
+          {ev._count.signals} 源
+        </span>
+      )}
+      {ev.officialConfirmed && (
+        <span className="font-medium text-emerald-600 dark:text-emerald-400">官方</span>
+      )}
+      {ev.status === "draft_ai" && (
+        <span className="text-amber-600 dark:text-amber-400">AI 草稿</span>
+      )}
+    </div>
+  );
+}
+
+export function EventCard({
+  ev,
+  variant = "row",
+}: {
+  ev: EventCardData;
+  variant?: "hero" | "grid" | "row";
+}) {
+  const href = `/events/${ev.id}`;
+  const title = ev.titleZh || ev.title;
+
+  if (variant === "hero") {
+    return (
+      <Link href={href} className="group grid gap-5">
+        {ev.imageUrl ? (
+          <>
+            <img
+              src={ev.imageUrl}
+              alt=""
+              className="aspect-[16/9] w-full rounded-xl object-cover"
+            />
+            <div className="space-y-3">
+              <Kicker ev={ev} />
+              <h2 className="font-display text-2xl font-bold leading-tight group-hover:text-primary sm:text-3xl lg:text-4xl">
+                {title}
+              </h2>
+              {ev.summaryZh && (
+                <p className="line-clamp-3 max-w-2xl text-base leading-7 text-muted-foreground">
+                  {ev.summaryZh}
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="space-y-3 border-l-4 border-primary pl-5">
+            <Kicker ev={ev} />
+            <h2 className="font-display text-3xl font-bold leading-tight group-hover:text-primary sm:text-4xl">
+              {title}
+            </h2>
+            {ev.summaryZh && (
+              <p className="line-clamp-3 max-w-2xl text-base leading-7 text-muted-foreground">
+                {ev.summaryZh}
+              </p>
+            )}
+          </div>
+        )}
+      </Link>
+    );
+  }
+
+  if (variant === "grid") {
+    return (
+      <Link href={href} className="group flex flex-col gap-3">
+        {ev.imageUrl ? (
+          <img
+            src={ev.imageUrl}
+            alt=""
+            className="aspect-[16/10] w-full rounded-lg object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="relative flex aspect-[16/10] w-full items-end overflow-hidden rounded-lg bg-muted p-4">
+            <span
+              className={`absolute inset-x-0 top-0 h-[3px] ${MEDIUM_BAR[ev.medium ?? "other"] ?? MEDIUM_BAR.other}`}
+            />
+            <span className="font-display text-2xl font-bold text-muted-foreground/40">
+              {CATEGORY_LABEL[ev.category] ?? ev.category}
+            </span>
+          </div>
+        )}
+        <div className="space-y-2">
+          <Kicker ev={ev} />
+          <h3 className="line-clamp-2 text-base font-bold leading-snug group-hover:text-primary">
+            {title}
+          </h3>
+        </div>
+      </Link>
+    );
+  }
+
   const keyFact = buildFactRows(ev.medium, ev.category, ev.facts).find((r) => "value" in r) as
     | { label: string; value: string }
     | undefined;
+
   return (
-    <Link href={`/events/${ev.id}`} className="block">
-      <Card
-        className={
-          "overflow-hidden rounded-md shadow-none transition-colors hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--muted))]/35 " +
-          (highlight ? "border-orange-500/60 bg-orange-500/5" : "")
-        }
-      >
-        <CardContent className="space-y-2.5 p-4">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-medium text-[hsl(var(--primary))]">{relTime(ev.publishedAt ?? ev.firstSeenAt)}</span>
-            <MediumBadge medium={ev.medium} />
-            <CategoryBadge category={ev.category} />
-            <StatusBadge status={ev.status} />
-            {multiSource && (
-              <Badge className="gap-1 border-orange-500 text-orange-500">
-                <Flame className="h-3 w-3" />
-                {ev._count.signals} 源聚合
-              </Badge>
-            )}
-            {ev.officialConfirmed && <span className="text-xs text-emerald-500">官方</span>}
-          </div>
-          <h3 className="line-clamp-2 text-base font-semibold leading-6">{ev.titleZh || ev.title}</h3>
-          {ev.summaryZh && (
-            <p className="line-clamp-2 text-sm leading-6 text-[hsl(var(--muted-foreground))]">
-              {ev.summaryZh}
-            </p>
-          )}
-          {keyFact && (
-            <p className="text-xs text-[hsl(var(--foreground))]">
-              <span className="text-[hsl(var(--muted-foreground))]">{keyFact.label}</span> {keyFact.value}
-            </p>
-          )}
-          <div className="flex flex-wrap gap-3 border-t pt-2 text-xs text-[hsl(var(--muted-foreground))]">
-            <span>置信度 {(ev.confidence * 100).toFixed(0)}%</span>
-            <span className="inline-flex items-center gap-1">
-              <Flame className="h-3 w-3 text-orange-500" />
-              热度 {ev.heatScore}
-            </span>
-            <span>来源 {ev._count.signals}</span>
-          </div>
-        </CardContent>
-      </Card>
+    <Link
+      href={href}
+      className="group grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 py-5"
+    >
+      <div className="min-w-0 space-y-2">
+        <Kicker ev={ev} />
+        <h3 className="line-clamp-2 text-lg font-bold leading-snug group-hover:text-primary sm:text-xl">
+          {title}
+        </h3>
+        {ev.summaryZh && (
+          <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">{ev.summaryZh}</p>
+        )}
+        {keyFact && (
+          <p className="inline-flex max-w-full items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs">
+            <span className="shrink-0 text-muted-foreground">{keyFact.label}</span>
+            <span className="truncate">{keyFact.value}</span>
+          </p>
+        )}
+      </div>
+      {ev.imageUrl && (
+        <img
+          src={ev.imageUrl}
+          alt=""
+          className="hidden h-24 w-40 rounded-md object-cover sm:block"
+          loading="lazy"
+        />
+      )}
     </Link>
   );
 }
