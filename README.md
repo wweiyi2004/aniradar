@@ -2,7 +2,7 @@
 
 一个关注**时效性**的动漫新情报监测网站。它不做 Bangumi 式的条目库/评分/收藏，而是监控官方 News、官方 YouTube RSS、PR/媒体 News 等来源，按"首次发现时间"整理成实时情报流。
 
-第一阶段不接 X(Twitter)、无用户系统、无评论、无评分。AI 模块为规则版 mock，保留接口以便后续替换真实模型。
+第一阶段不接 X(Twitter)、无用户系统、无评论、无评分。AI 模块支持 OpenAI 兼容接口；未配置 key 时自动回退规则 mock，项目仍可完整运行。
 
 ---
 
@@ -13,7 +13,7 @@ pnpm workspace monorepo。抓取链路运行在独立的 `apps/worker`（BullMQ�
 ```
 scheduler(每30s) ──fetch-source job──▶ BullMQ ──▶ fetch worker
   fetch worker: 选 Adapter → 抓取 → hash 去重 → 入库 Signal → 投递 classify-signal job
-  classify worker: AI mock 分类 → 生成/更新 Event → 写状态
+  classify worker: AI/规则 mock 分类 → 生成/更新 Event → 写状态
   全过程写 FetchLog
 web: 读 DB 展示首页/详情/后台；POST /api/admin/sources/[id]/fetch → 入队
 ```
@@ -49,7 +49,7 @@ aniradar/
 | `@aniradar/crawler` | `fetchUrl`：超时、自定义 UA、etag/last-modified 条件请求、304 处理 |
 | `@aniradar/sources` | `SourceAdapter` 接口 + `RssAdapter`/`YouTubeRssAdapter`/`HtmlListAdapter`/`PageDiffAdapter` + `getAdapter` |
 | `@aniradar/detector` | `computeSignalHash`/`normalizeUrl`/`computeContentHash`、`buildEventFromSignal`（自动发布规则） |
-| `@aniradar/ai` | `analyze`（一次调用完成分类+日译中标题/摘要）：配置 `AI_API_KEY` 走 DeepSeek（OpenAI 兼容），未配置/失败自动回退 `classify`+`summarize` 规则 mock |
+| `@aniradar/ai` | `analyze`（一次调用完成分类、媒介、中文标题、导语、结构化 facts）：配置 `AI_API_KEY` 走 DeepSeek（OpenAI 兼容），未配置/失败自动回退规则 mock |
 
 ---
 
@@ -69,6 +69,7 @@ pnpm install
 
 # 2) 准备环境变量
 cp .env.example .env
+# 如需访问后台，把 .env 里的 ADMIN_PASSWORD 改成非空强密码
 
 # 3) 启动 PostgreSQL + Redis
 docker compose up -d
@@ -92,7 +93,8 @@ pnpm dev:web
 启动后：
 - 前台首页 `http://localhost:3000/` —— 实时情报流（按首次发现时间倒序）
 - 事件详情 `http://localhost:3000/events/[id]`
-- 后台：`/admin/sources`、`/admin/signals`、`/admin/events`、`/admin/fetch-logs`
+- 后台：`/admin/sources`、`/admin/signals`、`/admin/events`、`/admin/fetch-logs`（Basic Auth；`ADMIN_PASSWORD` 为空时 fail-closed）
+- 前台默认**不展示** `draft_ai` 草稿（仅 `auto_published` / `published`）；本地调试可设 `PUBLIC_SHOW_DRAFT=true`
 
 ---
 
@@ -104,6 +106,7 @@ pnpm dev:web
   { "listItem": ".news-list li", "title": ".title", "url": "a", "date": ".date", "summary": ".summary" }
   ```
 - **方式二**：编辑 `packages/db/prisma/seed.ts` 后 `pnpm db:seed`（按 URL 去重，不会重复插入）。
+- **源健康检查**：`pnpm sources:check` 会按 seed 源逐个执行对应 adapter，输出每个源抓到的条数；网络受限时 YouTube/部分海外站点可能需要 `HTTPS_PROXY`。
 
 ### 手动触发抓取
 - 后台 `/admin/sources` 对某行点"抓取"。
@@ -120,6 +123,14 @@ pnpm dev:web
 ### 自动发布规则
 来源类型为 `official_news` 或 `youtube_rss`，且 AI 置信度 ≥ 0.9 → Event 直接 `auto_published`；否则 `draft_ai` 等待后台审核。
 
+### AI 与历史回填
+- `.env` 留空 `AI_API_KEY` 时使用规则 mock：可分类、可生成基础中文标题/导语，`medium` 通过规则兜底，`facts` 通常为空。
+- 配置 `AI_API_KEY` 后，新 Signal 会使用真实 AI 抽取 `medium`、`leadZh`、`facts`；worker 的 reanalyze 队列会按 `REANALYZE_*` 配置逐步升级近期 mock 结果。
+- 对已有事件只补媒介板块，可运行：
+  ```bash
+  pnpm --filter @aniradar/db exec dotenv -e ../../.env -- tsx prisma/backfillMedium.ts
+  ```
+
 ---
 
 ## 数据模型
@@ -135,14 +146,43 @@ pnpm dev:web
 ## 测试
 
 ```bash
-pnpm test    # 运行 parser / detector / ai 等纯逻辑单测（vitest）
+pnpm test       # 运行 parser / detector / ai / shared 等纯逻辑单测（vitest）
+pnpm typecheck  # 全仓 tsc --noEmit
+pnpm sources:check
 ```
+
+CI（GitHub Actions）在 push/PR 到 `master`/`main` 时自动跑 `pnpm test` + `pnpm typecheck`。
+
+## 端到端冒烟
+
+本地完整闭环检查：
+
+```bash
+docker compose up -d postgres redis
+pnpm db:generate
+pnpm db:migrate
+pnpm db:seed
+pnpm sources:check
+pnpm dev:worker
+pnpm dev:web
+```
+
+然后访问首页，或到 `/admin/sources` 手动触发某个源抓取，再看 `/admin/fetch-logs`、`/admin/signals`、首页和事件详情页是否出现数据。
+
+生产/准生产容器方式：
+
+```bash
+docker compose up -d --build postgres redis worker web
+docker compose logs -f worker web
+```
+
+上线前务必设置：`ADMIN_PASSWORD`、`CRAWLER_USER_AGENT`、必要时 `HTTPS_PROXY`、可选 `AI_API_KEY`。`postgres` 与 `redis` 已配置 healthcheck，`worker`/`web` 会在基础服务健康后启动并按 `restart: unless-stopped` 自愈。
 
 ---
 
 ## 下一步建议接入的真实 News 源
 
-已内置并实测可用的真实源：`アニメ！アニメ！`、`コミックナタリー`、`映画ナタリー`、`音楽ナタリー`（RSS）+ `アニプレックス`（YouTube RSS）+ `映画.com アニメ`（**html_list**，selector 已实测可抽 20 条）。建议后续按"官方/高时效"继续扩充：
+已内置的真实源包括：`アニメ！アニメ！`、`コミックナタリー`、`映画ナタリー`、`音楽ナタリー`、京都动画、MAPPA、CloverWorks、Bones、A-1 Pictures、`映画.com アニメ`，以及 アニプレックス / TOHO animation / KADOKAWAanime / PONY CANYON Anime 的 YouTube RSS。建议定期运行 `pnpm sources:check`，因为站点结构与反爬策略会变化。
 
 **RSS / 官方新闻（最易接、时效高）**
 - アニメ！アニメ！(animeanime.jp) — 已内置，稳定可用
@@ -164,10 +204,11 @@ pnpm test    # 运行 parser / detector / ai 等纯逻辑单测（vitest）
 ## 已实现的进阶能力
 
 - **事件合并**：见 `packages/detector/src/merge.ts`（`isSameEvent`/`extractWorkTitle`/`titleSimilarity`）+ `apps/worker/src/processClassify.ts`。同主题多源 Signal 合并为单 Event 并累加 heatScore（classify worker 并发设为 1 以避免合并竞态）。
-- **真实 AI 分类/翻译**：`packages/ai/src/analyze.ts`。在 `.env` 配置 `AI_API_KEY`（默认 DeepSeek，`AI_BASE_URL`/`AI_MODEL` 可改成任意 OpenAI 兼容服务）后，每条情报一次调用得到「是否动漫情报 + 分类 + 置信度 + 简体中文标题/摘要」。**未配置 key 或调用失败时自动回退规则 mock**，项目始终可运行。DeepSeek 国内直连无需代理。
-- **首页多源聚合 + 热度排序**：热门聚合置顶区、`N 源聚合` badge、最新/热度排序切换。
+- **真实 AI 分类/翻译/事实抽取**：`packages/ai/src/analyze.ts`。在 `.env` 配置 `AI_API_KEY`（默认 DeepSeek，`AI_BASE_URL`/`AI_MODEL` 可改成任意 OpenAI 兼容服务）后，每条情报一次调用得到「是否动漫情报 + 媒介板块 + 分类 + 置信度 + 简体中文标题/导语 + facts」。**未配置 key 或调用失败时自动回退规则 mock**，项目始终可运行。
+- **首页多源聚合 + 热度排序 + 板块过滤**：热门聚合置顶区、`N 源聚合` badge、最新/热度排序切换、动画/漫画/轻小说/游戏/剧场版/周边 tab。
+- **详情页结构化阅读**：一句话导语 + 按 medium/category 渲染的事实表；卡片会显示一条关键事实。
 
 ## 后续扩展点
 
-- **更多解析器/源**：官网 News 详情页结构化、更多 html_list/page_diff 真实站点、官方 YouTube 频道扩充。
+- **更多解析器/源**：更多官网 News 详情页结构化、更多 html_list/page_diff 真实站点、官方 YouTube 频道扩充。
 - **X(Twitter) 监控、用户系统、评分**（后续阶段）。
