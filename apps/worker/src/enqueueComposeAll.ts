@@ -2,11 +2,14 @@ import { prisma } from "@aniradar/db";
 import { composeQueue } from "./queues";
 
 // 一次性：给所有“已分类、可见、尚无 bodyZh”的事件入队合成。运行中的 worker 会逐个处理。
+// FORCE=1 时忽略"尚无 bodyZh"条件，对全部可见事件重新合成（用于 compose prompt 升级后回填）。
+const FORCE = process.env.FORCE === "1";
+
 async function main() {
   const events = await prisma.event.findMany({
     where: {
       status: { in: ["auto_published", "published", "draft_ai"] },
-      bodyZh: null,
+      ...(FORCE ? {} : { bodyZh: null }),
     },
     select: { id: true },
   });

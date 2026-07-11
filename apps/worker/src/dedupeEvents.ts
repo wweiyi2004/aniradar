@@ -14,7 +14,12 @@ async function main() {
     orderBy: { firstSeenAt: "asc" },
   });
 
-  // 贪心聚类：每个事件找一个已有 primary（同分类、窗口内、isSameEvent）合并，否则自成 primary。
+  // 贪心聚类：每个事件找一个已有 primary（窗口内、isSameEvent —— 含 facts.work 强键
+  // 与兼容分类）合并，否则自成 primary。
+  const workOf = (facts: unknown): string | null => {
+    const w = (facts as Record<string, unknown> | null)?.work;
+    return typeof w === "string" && w.trim() ? w.trim() : null;
+  };
   const primaries: typeof events = [];
   const merges: { from: (typeof events)[number]; into: (typeof events)[number] }[] = [];
   for (const ev of events) {
@@ -22,8 +27,8 @@ async function main() {
       (p) =>
         Math.abs(p.firstSeenAt.getTime() - ev.firstSeenAt.getTime()) <= WINDOW_MS &&
         isSameEvent(
-          { title: p.title, category: p.category },
-          { title: ev.title, category: ev.category },
+          { title: p.title, category: p.category, work: workOf(p.facts) },
+          { title: ev.title, category: ev.category, work: workOf(ev.facts) },
         ),
     );
     if (target) merges.push({ from: ev, into: target });
@@ -32,7 +37,9 @@ async function main() {
 
   console.log(`events=${events.length} primaries=${primaries.length} merges=${merges.length}  APPLY=${APPLY}`);
   for (const { from, into } of merges) {
-    console.log(`  [${from.category}] "${from.titleZh ?? from.title}"\n      -> "${into.titleZh ?? into.title}"`);
+    console.log(
+      `  [${from.category}] "${from.titleZh ?? from.title}"\n      -> [${into.category}] "${into.titleZh ?? into.title}"`,
+    );
   }
   if (!APPLY) {
     console.log("\n(dry-run：未改动。确认无误后用 APPLY=1 再跑一次执行。)");
@@ -59,6 +66,8 @@ async function main() {
           imageUrl: cur.imageUrl ?? from.imageUrl,
           videoUrl: cur.videoUrl ?? from.videoUrl,
           officialConfirmed: cur.officialConfirmed || from.officialConfirmed,
+          // 弱标签 other 被合并进更具体分类的事件时升级分类。
+          ...(cur.category === "other" && from.category !== "other" ? { category: from.category } : {}),
         },
       });
       await tx.event.update({ where: { id: from.id }, data: { status: "merged" } });

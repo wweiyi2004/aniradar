@@ -10,7 +10,12 @@ export async function tick(): Promise<void> {
     const due =
       !s.lastCheckedAt || now - new Date(s.lastCheckedAt).getTime() >= s.fetchIntervalSec * 1000;
     if (due) {
-      await fetchQueue.add("fetch", { sourceId: s.id }, { removeOnComplete: 100, removeOnFail: 100 });
+      const bucket = Math.floor(now / Math.max(1, s.fetchIntervalSec * 1000));
+      await fetchQueue.add("fetch", { sourceId: s.id }, {
+        jobId: `fetch:${s.id}:${bucket}`,
+        removeOnComplete: 100,
+        removeOnFail: 100,
+      });
     }
   }
 }
@@ -22,19 +27,22 @@ export async function reanalyzeTick(): Promise<void> {
   const signals = await prisma.signal.findMany({
     where: {
       aiSource: "mock",
-      status: "classified",
-      eventId: { not: null },
       firstSeenAt: { gte: since },
+      OR: [
+        { status: "classified", eventId: { not: null } },
+        { status: "ignored" },
+      ],
     },
     orderBy: { firstSeenAt: "desc" },
     take: env.reanalyzeBatch,
     select: { id: true },
   });
+  const bucket = Math.floor(Date.now() / Math.max(1, env.reanalyzeIntervalMs));
   for (const s of signals) {
     await reanalyzeQueue.add(
       "reanalyze",
       { signalId: s.id },
-      { removeOnComplete: 200, removeOnFail: 200 },
+      { jobId: `reanalyze:${s.id}:${bucket}`, removeOnComplete: 200, removeOnFail: 200 },
     );
   }
 }
