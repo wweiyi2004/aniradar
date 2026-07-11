@@ -9,11 +9,12 @@ export async function enrichItem(item: FetchedItem, strategy: FetchStrategy): Pr
   try {
     const res = await fetchUrl(item.url, { timeoutMs: 12_000 });
     if (res.notModified || !res.body) return item;
-    const { imageUrl, text } = extractArticle(res.body, item.url);
+    const { imageUrl, videoUrl, text } = extractArticle(res.body, item.url);
     return {
       ...item,
       rawText: text && text.length > (item.rawText?.length ?? 0) ? text : item.rawText,
       imageUrl: item.imageUrl ?? imageUrl,
+      videoUrl: item.videoUrl ?? videoUrl,
     };
   } catch {
     return item;

@@ -26,3 +26,46 @@ describe("extractArticle", () => {
     expect(article.text).not.toContain("短文");
   });
 });
+
+const P = "この段落は二十文字を超える本文テキストです、テスト用の内容。";
+
+function page(bodyInner: string, head = ""): string {
+  return `<!doctype html><html><head>${head}</head><body>${bodyInner}</body></html>`;
+}
+
+describe("extractArticle · 内嵌 YouTube 提取", () => {
+  it("article 内 iframe 嵌入 → videoUrl", () => {
+    const doc = page(
+      `<article><p>${P}</p><iframe src="https://www.youtube.com/embed/AbC123xyz_-?rel=0"></iframe></article>`,
+    );
+    expect(extractArticle(doc, "https://example.com/news/1").videoUrl).toBe(
+      "https://www.youtube.com/watch?v=AbC123xyz_-",
+    );
+  });
+  it("nocookie 域 iframe 同样识别", () => {
+    const doc = page(
+      `<article><iframe src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"></iframe><p>${P}</p></article>`,
+    );
+    expect(extractArticle(doc, "https://example.com/").videoUrl).toBe(
+      "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    );
+  });
+  it("article 内正文链接指向 YouTube → videoUrl", () => {
+    const doc = page(`<article><p>${P}</p><a href="https://youtu.be/dQw4w9WgXcQ">PVを見る</a></article>`);
+    expect(extractArticle(doc, "https://example.com/").videoUrl).toBe(
+      "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    );
+  });
+  it("无 article/main 容器时不取链接（避免页脚频道链接误报），但 iframe 仍可取", () => {
+    const docLink = page(`<p>${P}</p><a href="https://youtu.be/dQw4w9WgXcQ">ch</a>`);
+    expect(extractArticle(docLink, "https://example.com/").videoUrl).toBeUndefined();
+    const docIframe = page(`<p>${P}</p><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>`);
+    expect(extractArticle(docIframe, "https://example.com/").videoUrl).toBe(
+      "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    );
+  });
+  it("无视频时 videoUrl 为 undefined", () => {
+    const doc = page(`<article><p>${P}</p></article>`);
+    expect(extractArticle(doc, "https://example.com/").videoUrl).toBeUndefined();
+  });
+});
