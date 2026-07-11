@@ -4,8 +4,10 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
     "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
-    "start": "dotenv -e ../../.env -- tsx src/index.ts"
+    "start": "dotenv -e ../../.env -- tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@aniradar/shared": "workspace:*",

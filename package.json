@@ -6,9 +6,11 @@
     "db:generate": "pnpm --filter @aniradar/db generate",
     "db:migrate": "pnpm --filter @aniradar/db migrate",
     "db:seed": "pnpm --filter @aniradar/db seed",
+    "sources:check": "pnpm --filter @aniradar/db check:sources",
     "dev:web": "pnpm --filter @aniradar/web dev",
     "dev:worker": "pnpm --filter @aniradar/worker dev",
     "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
     "test": "vitest run"
   },
   "devDependencies": {
