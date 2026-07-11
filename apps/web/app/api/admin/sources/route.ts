@@ -1,25 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@aniradar/db";
+import { parseSourceCreate } from "@/lib/source-input";
 
 export async function POST(req: NextRequest) {
   try {
-    const b = await req.json();
-    if (!b.name || !b.url || !b.type || !b.fetchStrategy) {
-      return NextResponse.json({ error: "name/url/type/fetchStrategy 必填" }, { status: 400 });
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "请求体须为 JSON" }, { status: 400 });
+    }
+    const parsed = parseSourceCreate(body);
+    if ("error" in parsed) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
     const src = await prisma.source.create({
       data: {
-        name: b.name,
-        url: b.url,
-        type: b.type,
-        level: b.level ?? "B",
-        fetchStrategy: b.fetchStrategy,
-        fetchIntervalSec: Number(b.fetchIntervalSec ?? 900),
-        enabled: b.enabled ?? true,
-        selectorConfig:
-          b.selectorConfig && String(b.selectorConfig).trim()
-            ? JSON.parse(b.selectorConfig)
-            : undefined,
+        name: parsed.name,
+        url: parsed.url,
+        type: parsed.type,
+        level: parsed.level,
+        fetchStrategy: parsed.fetchStrategy,
+        fetchIntervalSec: parsed.fetchIntervalSec,
+        enabled: parsed.enabled,
+        selectorConfig: parsed.selectorConfig as object | undefined,
       },
     });
     return NextResponse.json(src);

@@ -32,7 +32,7 @@ export default async function SourcesPage() {
             <TR key={s.id}>
               <TD>
                 <div className="font-medium">{s.name}</div>
-                <div className="max-w-xs truncate text-xs text-[hsl(var(--muted-foreground))]">{s.url}</div>
+                <div className="max-w-xs truncate text-xs text-muted-foreground">{s.url}</div>
               </TD>
               <TD>
                 {s.type}

@@ -65,7 +65,7 @@ export default async function SignalsPage({
                   {s.titleZh || s.title}
                 </a>
                 {s.titleZh && s.titleZh !== s.title && (
-                  <div className="text-xs text-[hsl(var(--muted-foreground))]">{s.title}</div>
+                  <div className="text-xs text-muted-foreground">{s.title}</div>
                 )}
               </TD>
               <TD>{s.source.name}</TD>
