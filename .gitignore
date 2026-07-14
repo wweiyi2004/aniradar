@@ -1,6 +1,10 @@
 node_modules/
 .next/
 dist/
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.bak
 .env
 .env.local
 *.log

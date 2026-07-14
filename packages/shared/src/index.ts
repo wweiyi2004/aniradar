@@ -80,11 +80,6 @@ export interface ClassifyResult {
   confidence: number; // 0..1
 }
 
-export const QUEUE_FETCH = "fetch-source";
-export const QUEUE_CLASSIFY = "classify-signal";
-export const QUEUE_REANALYZE = "reanalyze-signal";
-export const QUEUE_COMPOSE = "compose-event";
-
 export interface FetchJobData {
   sourceId: string;
 }

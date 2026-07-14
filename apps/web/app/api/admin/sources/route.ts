@@ -28,6 +28,10 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json(src);
   } catch (e: unknown) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 400 });
+    const code = (e as { code?: string })?.code;
+    if (code === "P2002") {
+      return NextResponse.json({ error: "该 URL 已存在" }, { status: 409 });
+    }
+    return NextResponse.json({ error: "创建失败" }, { status: 400 });
   }
 }

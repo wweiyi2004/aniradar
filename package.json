@@ -3,15 +3,20 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "postinstall": "tsx scripts/ensureEnv.ts && pnpm db:generate",
     "db:generate": "pnpm --filter @aniradar/db generate",
     "db:migrate": "pnpm --filter @aniradar/db migrate",
+    "db:setup": "tsx scripts/ensureEnv.ts && pnpm --filter @aniradar/db run setup",
+    "db:import:postgres": "tsx scripts/ensureEnv.ts && pnpm --filter @aniradar/db run import:postgres",
     "db:seed": "pnpm --filter @aniradar/db seed",
     "sources:check": "pnpm --filter @aniradar/db check:sources",
     "dev:web": "pnpm --filter @aniradar/web dev",
     "dev:worker": "pnpm --filter @aniradar/worker dev",
+    "dev": "pnpm db:setup && concurrently -k -n web,worker -c cyan,magenta \"pnpm dev:web\" \"pnpm dev:worker\"",
+    "start": "pnpm db:setup && concurrently -k -n web,worker -c cyan,magenta \"pnpm --filter @aniradar/web start\" \"pnpm --filter @aniradar/worker start\"",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
-    "test": "vitest run"
+    "test": "dotenv -e .env.test -- tsx scripts/ensureEnv.ts && dotenv -e .env.test -- pnpm --filter @aniradar/db run setup && dotenv -e .env.test -- vitest run"
   },
   "devDependencies": {
     "typescript": "^5.6.0",
@@ -19,7 +24,9 @@
     "tsx": "^4.19.0",
     "prettier": "^3.3.0",
     "dotenv-cli": "^7.4.2",
-    "@types/node": "^22.0.0"
+    "dotenv": "^16.4.7",
+    "@types/node": "^22.0.0",
+    "concurrently": "^9.2.1"
   },
   "packageManager": "pnpm@11.5.2"
 }

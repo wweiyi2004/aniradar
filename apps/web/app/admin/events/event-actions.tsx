@@ -3,7 +3,19 @@ import { Button } from "@/components/ui/button";
 
 export function EventActions({ id }: { id: string }) {
   async function set(status: string) {
-    await fetch(`/api/admin/events/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
+    if (status === "retracted" || status === "ignored") {
+      if (!confirm(status === "retracted" ? "确认撤回该事件？" : "确认忽略该事件？")) return;
+    }
+    const res = await fetch(`/api/admin/events/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      alert(data.error || "操作失败");
+      return;
+    }
     location.reload();
   }
   return (

@@ -1,8 +1,7 @@
-import { prisma } from "@aniradar/db";
+import { enqueueJob, jobKeys, prisma } from "@aniradar/db";
 import { getAdapter, enrichItems } from "@aniradar/sources";
 import { computeSignalHash } from "@aniradar/detector";
 import type { FetchJobData } from "@aniradar/shared";
-import { classifyQueue } from "./queues";
 import { env } from "@aniradar/config";
 import { pickToEnrich } from "./enrichPlan";
 import { shouldRetry, type RetryCtx } from "./retry";
@@ -54,23 +53,29 @@ export async function processFetch(data: FetchJobData, ctx?: RetryCtx): Promise<
       const item = enriched[i];
       const hash = ordered[i].hash;
       try {
-        const signal = await prisma.signal.create({
-          data: {
-            sourceId: source.id,
-            title: item.title,
-            url: item.url,
-            rawText: item.rawText,
-            summary: item.summary,
-            imageUrl: item.imageUrl,
-            videoUrl: item.videoUrl,
-            publishedAt: item.publishedAt,
-            publishedTimePrecision: item.publishedTimePrecision,
-            hash,
-            status: "raw",
-          },
+        await prisma.$transaction(async (tx) => {
+          const signal = await tx.signal.create({
+            data: {
+              sourceId: source.id,
+              title: item.title,
+              url: item.url,
+              rawText: item.rawText,
+              summary: item.summary,
+              imageUrl: item.imageUrl,
+              videoUrl: item.videoUrl,
+              publishedAt: item.publishedAt,
+              publishedTimePrecision: item.publishedTimePrecision,
+              hash,
+              status: "raw",
+            },
+          });
+          await enqueueJob(tx, {
+            type: "classify",
+            dedupeKey: jobKeys.classify(signal.id),
+            payload: { signalId: signal.id },
+          });
         });
         newCount++;
-        await classifyQueue.add("classify", { signalId: signal.id });
       } catch (e: unknown) {
         // 唯一约束冲突 = 重复内容，跳过
         if (typeof e === "object" && e !== null && (e as { code?: string }).code === "P2002") continue;
@@ -110,7 +115,7 @@ export async function processFetch(data: FetchJobData, ctx?: RetryCtx): Promise<
       where: { id: source.id },
       data: { lastCheckedAt: new Date() },
     });
-    if (shouldRetry(e, ctx)) throw e; // 瞬时网络错误交 BullMQ 重试
+    if (shouldRetry(e, ctx)) throw e; // 瞬时网络错误交持久化 Job runner 重试
     await prisma.source.update({
       where: { id: source.id },
       data: { failureCount: { increment: 1 } },

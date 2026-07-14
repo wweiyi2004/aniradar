@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -77,6 +77,19 @@ enum FetchLogStatus {
   skipped
 }
 
+enum JobType {
+  fetch
+  classify
+  reanalyze
+  compose
+}
+
+enum JobStatus {
+  pending
+  running
+  failed
+}
+
 model Source {
   id               String        @id @default(cuid())
   name             String
@@ -97,6 +110,8 @@ model Source {
   updatedAt        DateTime      @updatedAt
   signals          Signal[]
   fetchLogs        FetchLog[]
+
+  @@unique([url])
 }
 
 model Signal {
@@ -123,6 +138,7 @@ model Signal {
 
   @@index([sourceId])
   @@index([status])
+  @@index([eventId])
 }
 
 model Event {
@@ -133,6 +149,7 @@ model Event {
   bodyZh            String?
   medium            String?
   facts             Json?
+  workKey           String?
   imageUrl          String?
   videoUrl          String?
   category          EventCategory
@@ -150,6 +167,9 @@ model Event {
   @@index([category])
   @@index([firstSeenAt])
   @@index([publishedAt])
+  @@index([workKey])
+  @@index([status, publishedAt])
+  @@index([workKey, firstSeenAt])
 }
 
 model FetchLog {
@@ -164,4 +184,30 @@ model FetchLog {
   endedAt      DateTime?
 
   @@index([sourceId])
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  type        JobType
+  dedupeKey   String    @unique
+  payload     Json
+  status      JobStatus @default(pending)
+  runAt       DateTime  @default(now())
+  attempts    Int       @default(0)
+  maxAttempts Int
+  lockedAt    DateTime?
+  lockedBy    String?
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([type, status, runAt])
+  @@index([status, lockedAt])
+}
+
+model RuntimeLease {
+  name      String   @id
+  ownerId   String
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
 }

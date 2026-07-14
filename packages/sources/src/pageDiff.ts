@@ -19,10 +19,12 @@ export const PageDiffAdapter: SourceAdapter = {
     return {
       items: [
         {
-          title: `页面更新: ${source.url}`,
+          // 内容 hash 写入 title，确保 computeSignalHash 随页面变更变化，避免只记 lastSeenHash 却丢后续 Signal
+          title: `页面更新: ${source.url} · ${hash.slice(0, 12)}`,
           url: source.url,
           rawText: text.slice(0, 2000),
           publishedTimePrecision: "unknown" as const,
+          externalId: hash,
         },
       ],
       lastModified: hash,

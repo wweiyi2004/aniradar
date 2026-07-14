@@ -1,4 +1,4 @@
-import { prisma } from "@aniradar/db";
+import { prisma, workKeyFromFacts } from "@aniradar/db";
 import { analyze } from "@aniradar/ai";
 import type { ReanalyzeJobData } from "@aniradar/shared";
 import { mergeFacts } from "./facts";
@@ -40,13 +40,15 @@ export async function processReanalyze(data: ReanalyzeJobData): Promise<void> {
   });
   if (signal.eventId) {
     const ev = await prisma.event.findUnique({ where: { id: signal.eventId }, select: { medium: true, facts: true } });
+    const facts = mergeFacts(ev?.facts, result.facts);
     await prisma.event.update({
       where: { id: signal.eventId },
       data: {
         titleZh: result.titleZh,
         summaryZh: result.leadZh,
         medium: ev?.medium ?? result.medium,
-        facts: mergeFacts(ev?.facts, result.facts) as object,
+        facts: facts as object,
+        workKey: workKeyFromFacts(facts),
       },
     });
   }

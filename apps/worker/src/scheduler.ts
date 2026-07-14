@@ -1,7 +1,6 @@
-import { prisma } from "@aniradar/db";
+import { enqueueJob, jobKeys, prisma } from "@aniradar/db";
 import { env } from "@aniradar/config";
 import { isAiConfigured } from "@aniradar/ai";
-import { fetchQueue, reanalyzeQueue } from "./queues";
 
 export async function tick(): Promise<void> {
   const now = Date.now();
@@ -10,11 +9,10 @@ export async function tick(): Promise<void> {
     const due =
       !s.lastCheckedAt || now - new Date(s.lastCheckedAt).getTime() >= s.fetchIntervalSec * 1000;
     if (due) {
-      const bucket = Math.floor(now / Math.max(1, s.fetchIntervalSec * 1000));
-      await fetchQueue.add("fetch", { sourceId: s.id }, {
-        jobId: `fetch:${s.id}:${bucket}`,
-        removeOnComplete: 100,
-        removeOnFail: 100,
+      await enqueueJob(prisma, {
+        type: "fetch",
+        dedupeKey: jobKeys.fetch(s.id),
+        payload: { sourceId: s.id },
       });
     }
   }
@@ -39,11 +37,11 @@ export async function reanalyzeTick(): Promise<void> {
   });
   const bucket = Math.floor(Date.now() / Math.max(1, env.reanalyzeIntervalMs));
   for (const s of signals) {
-    await reanalyzeQueue.add(
-      "reanalyze",
-      { signalId: s.id },
-      { jobId: `reanalyze:${s.id}:${bucket}`, removeOnComplete: 200, removeOnFail: 200 },
-    );
+    await enqueueJob(prisma, {
+      type: "reanalyze",
+      dedupeKey: jobKeys.reanalyze(s.id, bucket),
+      payload: { signalId: s.id },
+    });
   }
 }
 

@@ -1,214 +1,135 @@
-# AniRadar · 动漫新情报雷达
+# AniRadar
 
-一个关注**时效性**的动漫新情报监测网站。它不做 Bangumi 式的条目库/评分/收藏，而是监控官方 News、官方 YouTube RSS、PR/媒体 News 等来源，按"首次发现时间"整理成实时情报流。
+AniRadar 自动抓取日本动画、漫画、轻小说与相关二次元资讯，经规则或 AI 分类、翻译、合并后生成可检索的中文情报流。
 
-第一阶段不接 X(Twitter)、无用户系统、无评论、无评分。AI 模块支持 OpenAI 兼容接口；未配置 key 时自动回退规则 mock，项目仍可完整运行。
-
----
+项目采用单机双进程架构：Next.js Web 与独立 Worker 共享一个 SQLite 文件。无需 Docker、PostgreSQL 或 Redis。
 
 ## 架构
 
-pnpm workspace monorepo。抓取链路运行在独立的 `apps/worker`（BullMQ）；`apps/web`（Next.js）负责展示与"手动触发抓取"的入队 API。Postgres + Redis 用 Docker Compose 启动。
-
-```
-scheduler(每30s) ──fetch-source job──▶ BullMQ ──▶ fetch worker
-  fetch worker: 选 Adapter → 抓取 → hash 去重 → 入库 Signal → 投递 classify-signal job
-  classify worker: AI/规则 mock 分类 → 生成/更新 Event → 写状态
-  全过程写 FetchLog
-web: 读 DB 展示首页/详情/后台；POST /api/admin/sources/[id]/fetch → 入队
-```
-
-### 目录结构
-
-```
-aniradar/
-├─ apps/
-│  ├─ web/        # Next.js 前台 + 后台
-│  └─ worker/     # scheduler + fetch + classify worker
-├─ packages/
-│  ├─ shared/     # 共享枚举/类型/常量
-│  ├─ config/     # env、redis 连接、队列名
-│  ├─ db/         # Prisma schema + client 单例 + seed
-│  ├─ parser/     # RSS / YouTube RSS / HTML 解析（纯函数）
-│  ├─ crawler/    # HTTP 抓取层（超时/UA/etag 条件请求）
-│  ├─ sources/    # SourceAdapter 接口 + 4 个实现
-│  ├─ detector/   # hash 去重 + Event 生成规则（合并留接口）
-│  └─ ai/         # 规则版 classify/summarize mock
-├─ docker-compose.yml
-└─ ...
+```text
+外部 RSS / HTML / YouTube
+          │
+          ▼
+  Worker（抓取、分类、合并、AI）
+          │
+          ▼
+  data/aniradar.db（SQLite WAL）
+          ▲
+          │
+  Next.js Web / Admin API
 ```
 
-### 各 package 职责
+- `apps/web`：公开情报流、详情页和 Basic Auth 后台。
+- `apps/worker`：定时调度与 SQLite 持久化 Job runners。
+- `packages/db`：Prisma schema、SQLite Job 队列、seed 与 PostgreSQL 导入工具。
+- `packages/crawler` / `parser` / `sources`：安全抓取、解析和来源适配。
+- `packages/ai` / `detector`：分类、翻译、事实提取与事件合并。
 
-| 包 | 职责 |
-| --- | --- |
-| `@aniradar/shared` | 全仓共享的枚举（SourceType/EventCategory/…）、类型（FetchedItem/FetchResult/ClassifyResult）、队列名常量 |
-| `@aniradar/config` | 惰性读取 env、Redis 连接配置 |
-| `@aniradar/db` | Prisma schema、PrismaClient 单例、seed |
-| `@aniradar/parser` | `parseRss` / `parseYouTubeRss` / `parseHtmlList` 纯解析函数 |
-| `@aniradar/crawler` | `fetchUrl`：超时、自定义 UA、etag/last-modified 条件请求、304 处理 |
-| `@aniradar/sources` | `SourceAdapter` 接口 + `RssAdapter`/`YouTubeRssAdapter`/`HtmlListAdapter`/`PageDiffAdapter` + `getAdapter` |
-| `@aniradar/detector` | `computeSignalHash`/`normalizeUrl`/`computeContentHash`、`buildEventFromSignal`（自动发布规则） |
-| `@aniradar/ai` | `analyze`（一次调用完成分类、媒介、中文标题、导语、结构化 facts）：配置 `AI_API_KEY` 走 DeepSeek（OpenAI 兼容），未配置/失败自动回退规则 mock |
+SQLite 只面向单机本地磁盘；不要把数据库文件放在 NFS/SMB，也不要让多台服务器共享同一文件。Worker 使用数据库租约保证单实例运行。
 
----
+## 要求
 
-## 前置要求
+- Node.js 22+
+- pnpm 11
 
-- Node ≥ 20（开发用 v24）
-- pnpm（仓库锁定 11.5.2）
-- Docker Desktop（提供 PostgreSQL + Redis）
-
----
-
-## 快速开始
+## 一键启动
 
 ```bash
-# 1) 安装依赖
 pnpm install
+pnpm dev
+```
 
-# 2) 准备环境变量
-cp .env.example .env
-# 如需访问后台，把 .env 里的 ADMIN_PASSWORD 改成非空强密码
+`pnpm dev` 会自动：
 
-# 3) 启动 PostgreSQL + Redis
-docker compose up -d
+1. 缺少 `.env` 时从 `.env.example` 创建；
+2. 创建 `data/aniradar.db`；
+3. 应用 SQLite migration 并幂等 seed；
+4. 同时启动 Web 和 Worker。
 
-# 4) 生成 Prisma client、建表、写入示例 Source
+访问：
+
+- 前台：http://localhost:3000
+- 后台：http://localhost:3000/admin/sources
+
+Windows 也可双击 `start.cmd`；macOS/Linux 可运行 `./start.sh`。
+
+## 配置
+
+核心 `.env`：
+
+```dotenv
+DATABASE_URL="file:../../../data/aniradar.db"
+
+ADMIN_USER="admin"
+ADMIN_PASSWORD="请设置强密码"
+
+AI_API_KEY=""
+AI_BASE_URL="https://api.deepseek.com"
+AI_MODEL="deepseek-chat"
+
+SCHEDULER_INTERVAL_MS=30000
+JOB_POLL_INTERVAL_MS=500
+JOB_LOCK_TIMEOUT_MS=300000
+WORKER_LEASE_TTL_MS=30000
+```
+
+`DATABASE_URL` 相对 `packages/db/prisma/schema.prisma`，默认最终落在仓库根目录 `data/aniradar.db`。不配置 AI key 时使用规则分类，抓取链路仍可运行。
+
+## 常用命令
+
+```bash
+pnpm dev                 # 自动初始化并启动 Web + Worker
+pnpm dev:web             # 只启动 Web
+pnpm dev:worker          # 只启动 Worker
+pnpm db:setup            # 应用 migration + seed
+pnpm db:migrate          # 开发新 migration
+pnpm sources:check       # 检查 seed 来源
+pnpm test                # 单元测试 + SQLite 集成测试
+pnpm typecheck
+pnpm build
+```
+
+生产运行：
+
+```bash
+pnpm install --frozen-lockfile
 pnpm db:generate
-pnpm db:migrate
-pnpm db:seed
-
-# 5) 启动 worker（终端 A）—— 负责定时抓取与分类
-pnpm dev:worker
-
-# 6) 启动 web（终端 B）—— http://localhost:3000
-pnpm dev:web
+pnpm build
+pnpm start
 ```
 
-> 说明：`docker-compose.yml` 中 PostgreSQL 映射到主机 **5433** 端口（避免与其它本地 Postgres 冲突），`.env` 已对应。如需改回 5432，同时改 `docker-compose.yml` 与 `.env` 的 `DATABASE_URL`。
+## 从旧 PostgreSQL 全量导入
 
-> **代理（国内/受限网络）**：worker 抓取国际源（YouTube、部分 CDN 站点如 映画.com）需要代理。crawler 会自动读取 `HTTPS_PROXY` / `HTTP_PROXY` 环境变量并经其转发（Node 全局 fetch 默认不读这些变量，故 crawler 用 undici `ProxyAgent` 显式处理）。例如启动 worker 前：`export HTTPS_PROXY=http://127.0.0.1:7890`。国内可直连的源（animeanime、natalie 等）无代理也可。
+先停止 Web 和 Worker，并临时恢复旧 PostgreSQL。把旧连接地址放进 `.env`：
 
-启动后：
-- 前台首页 `http://localhost:3000/` —— 实时情报流（按首次发现时间倒序）
-- 事件详情 `http://localhost:3000/events/[id]`
-- 后台：`/admin/sources`、`/admin/signals`、`/admin/events`、`/admin/fetch-logs`（Basic Auth；`ADMIN_PASSWORD` 为空时 fail-closed）
-- 前台默认**不展示** `draft_ai` 草稿（仅 `auto_published` / `published`）；本地调试可设 `PUBLIC_SHOW_DRAFT=true`
+```dotenv
+POSTGRES_SOURCE_URL="postgresql://user:password@localhost:5432/aniradar?schema=public"
+```
 
----
-
-## 常用操作
-
-### 添加 Source
-- **方式一（推荐）**：后台 `/admin/sources` → "新增资讯源"，填名称/URL/类型/抓取策略/间隔。`html_list` 策略需在 selectorConfig 填 JSON，例如：
-  ```json
-  { "listItem": ".news-list li", "title": ".title", "url": "a", "date": ".date", "summary": ".summary" }
-  ```
-- **方式二**：编辑 `packages/db/prisma/seed.ts` 后 `pnpm db:seed`（按 URL 去重，不会重复插入）。
-- **源健康检查**：`pnpm sources:check` 会按 seed 源逐个执行对应 adapter，输出每个源抓到的条数；网络受限时 YouTube/部分海外站点可能需要 `HTTPS_PROXY`。
-
-### 手动触发抓取
-- 后台 `/admin/sources` 对某行点"抓取"。
-- 或调用 API：`POST /api/admin/sources/[id]/fetch`（向 BullMQ 投递一个 fetch-source job，由 worker 处理）。
-
-### 抓取策略与 Adapter
-| fetchStrategy | Adapter | 说明 |
-| --- | --- | --- |
-| `rss` | RssAdapter | rss-parser 解析 title/link/pubDate/contentSnippet |
-| `youtube_rss` | YouTubeRssAdapter | 解析 videoId/title/link，并按关键词（PV/特報/制作決定…）过滤 |
-| `html_list` | HtmlListAdapter | 按 selectorConfig 用 Cheerio 解析 News 列表，列表指纹变化才生成 Signal |
-| `page_diff` | PageDiffAdapter | 兜底：抓正文计算 hash，hash 变化才生成 Signal |
-
-### 自动发布规则
-来源类型为 `official_news` 或 `youtube_rss`，且 AI 置信度 ≥ 0.9 → Event 直接 `auto_published`；否则 `draft_ai` 等待后台审核。
-
-### AI 与历史回填
-- `.env` 留空 `AI_API_KEY` 时使用规则 mock：可分类、可生成基础中文标题/导语，`medium` 通过规则兜底，`facts` 通常为空。
-- 配置 `AI_API_KEY` 后，新 Signal 会使用真实 AI 抽取 `medium`、`leadZh`、`facts`；worker 的 reanalyze 队列会按 `REANALYZE_*` 配置逐步升级近期 mock 结果。
-- 对已有事件只补媒介板块，可运行：
-  ```bash
-  pnpm --filter @aniradar/db exec dotenv -e ../../.env -- tsx prisma/backfillMedium.ts
-  ```
-
----
-
-## 数据模型
-
-`Source`（资讯源）、`Signal`（单条抓取到的原始情报）、`Event`（聚合后的情报事件）、`FetchLog`（抓取日志）。详见 `packages/db/prisma/schema.prisma`。
-
-- 去重：`Signal.hash = sha256(sourceId + 归一化url + 归一化title)`，唯一约束，重复即跳过。
-- 排序核心：`Event.firstSeenAt` = 首个关联 Signal 的入库时间（"首次发现时间"）。
-- 事件合并：分类时在最近 72h 同分类 Event 中按"作品名（标题「」内）相同或标题相似度达阈值"寻找同一事件，命中则把新 Signal 挂到既有 Event 并累加 `heatScore`，否则新建。多源报道同一作品 → 聚合成一条（首页"来源 N">1）。
-
----
-
-## 测试
+目标 SQLite 已有 seed 数据时使用：
 
 ```bash
-pnpm test       # 运行 parser / detector / ai / shared 等纯逻辑单测（vitest）
-pnpm typecheck  # 全仓 tsc --noEmit
-pnpm sources:check
+pnpm db:import:postgres -- --force
 ```
 
-CI（GitHub Actions）在 push/PR 到 `master`/`main` 时自动跑 `pnpm test` + `pnpm typecheck`。
+导入器会在修改前 checkpoint 并备份 SQLite，然后分批迁移 Source、Event、Signal、FetchLog，保留原 ID、关系、JSON 和时间，最后比较表计数、检查孤立外键并重建未完成任务。失败时自动恢复备份。
 
-## 端到端冒烟
+## 部署到单台服务器
 
-本地完整闭环检查：
+推荐 Linux VPS + systemd/PM2 + Caddy/Nginx：
 
-```bash
-docker compose up -d postgres redis
-pnpm db:generate
-pnpm db:migrate
-pnpm db:seed
-pnpm sources:check
-pnpm dev:worker
-pnpm dev:web
-```
+1. 将项目和 `data/` 放在持久本地磁盘；
+2. 用 `pnpm start` 同时运行 Web/Worker；
+3. 仅让 Next.js 监听本机端口，通过反向代理提供 HTTPS；
+4. 为 `data/aniradar.db` 做定期在线备份；
+5. 发布前停止服务或完成 SQLite checkpoint 后再复制数据库文件。
 
-然后访问首页，或到 `/admin/sources` 手动触发某个源抓取，再看 `/admin/fetch-logs`、`/admin/signals`、首页和事件详情页是否出现数据。
+此架构适合单服务器的小到中等抓取量。若未来需要多服务器、共享存储或大量并发写入，应迁回共享 PostgreSQL 与分布式队列。
 
-生产/准生产容器方式：
+## 安全说明
 
-```bash
-docker compose up -d --build postgres redis worker web
-docker compose logs -f worker web
-```
-
-上线前务必设置：`ADMIN_PASSWORD`、`CRAWLER_USER_AGENT`、必要时 `HTTPS_PROXY`、可选 `AI_API_KEY`。`postgres` 与 `redis` 已配置 healthcheck，`worker`/`web` 会在基础服务健康后启动并按 `restart: unless-stopped` 自愈。
-
----
-
-## 下一步建议接入的真实 News 源
-
-已内置的真实源包括：`アニメ！アニメ！`、`コミックナタリー`、`映画ナタリー`、`音楽ナタリー`、京都动画、MAPPA、CloverWorks、Bones、A-1 Pictures、`映画.com アニメ`，以及 アニプレックス / TOHO animation / KADOKAWAanime / PONY CANYON Anime 的 YouTube RSS。建议定期运行 `pnpm sources:check`，因为站点结构与反爬策略会变化。
-
-**RSS / 官方新闻（最易接、时效高）**
-- アニメ！アニメ！(animeanime.jp) — 已内置，稳定可用
-- コミックナタリー / 映画ナタリー（natalie.mu）RSS
-- アニメイトタイムズ、PR TIMES（アニメカテゴリ）RSS
-- 各制作公司/发行商官网 News（多数提供 RSS 或可用 html_list）
-
-**官方 YouTube 频道 RSS（`youtube_rss`）**
-- アニプレックス、東宝アニメーション、KADOKAWAanime、バンダイナムコ、各作品官方频道
-- 用 `https://www.youtube.com/feeds/videos.xml?channel_id=频道ID`，靠关键词过滤 PV/特報/制作決定
-
-**官网 News 列表（`html_list`，需配 selectorConfig）**
-- 各 TV 动画官网 / 制作委员会官网的「NEWS」「お知らせ」列表页
-
-> 注意：部分站点（如 Anime News Network）会按 User-Agent 拦截（返回 403），接入前需确认抓取策略与频率合规；高价值官方源建议设较短 `fetchIntervalSec`。
-
----
-
-## 已实现的进阶能力
-
-- **事件合并**：见 `packages/detector/src/merge.ts`（`isSameEvent`/`extractWorkTitle`/`titleSimilarity`）+ `apps/worker/src/processClassify.ts`。同主题多源 Signal 合并为单 Event 并累加 heatScore（classify worker 并发设为 1 以避免合并竞态）。
-- **真实 AI 分类/翻译/事实抽取**：`packages/ai/src/analyze.ts`。在 `.env` 配置 `AI_API_KEY`（默认 DeepSeek，`AI_BASE_URL`/`AI_MODEL` 可改成任意 OpenAI 兼容服务）后，每条情报一次调用得到「是否动漫情报 + 媒介板块 + 分类 + 置信度 + 简体中文标题/导语 + facts」。**未配置 key 或调用失败时自动回退规则 mock**，项目始终可运行。
-- **首页多源聚合 + 热度排序 + 板块过滤**：热门聚合置顶区、`N 源聚合` badge、最新/热度排序切换、动画/漫画/轻小说/游戏/剧场版/周边 tab。
-- **详情页结构化阅读**：一句话导语 + 按 medium/category 渲染的事实表；卡片会显示一条关键事实。
-
-## 后续扩展点
-
-- **更多解析器/源**：更多官网 News 详情页结构化、更多 html_list/page_diff 真实站点、官方 YouTube 频道扩充。
-- **X(Twitter) 监控、用户系统、评分**（后续阶段）。
+- 后台密码为空时 fail-closed，不允许访问。
+- 后台变更 API 会拒绝跨站请求。
+- 抓取器只允许 HTTP(S)，逐跳检查重定向与 DNS 解析结果，拒绝私网/环回目标。
+- 抓取响应默认限制为 5 MiB。
+- Basic Auth 必须置于 HTTPS 反向代理之后。

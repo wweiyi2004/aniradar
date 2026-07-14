@@ -12,6 +12,7 @@ describe("analyze（无 API key 时回退规则 mock）", () => {
     expect(r.isAnimeNews).toBe(true);
     expect(r.category).toBe("sequel_announced");
     expect(r.medium).toBe("anime");
+    expect(r.confidence).toBeLessThan(0.9);
     expect(r.facts).toEqual({});
     expect(typeof r.leadZh).toBe("string");
   });

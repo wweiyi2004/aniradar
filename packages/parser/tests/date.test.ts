@@ -2,22 +2,22 @@ import { describe, it, expect } from "vitest";
 import { parseLooseDate } from "../src/date";
 
 describe("parseLooseDate", () => {
-  it("解析日文 YYYY年M月D日（曜）HH:MM", () => {
+  it("解析日文 YYYY年M月D日（曜）HH:MM 为 JST", () => {
     const d = parseLooseDate("2026年6月28日（日）22:00");
-    expect(d?.getFullYear()).toBe(2026);
-    expect(d?.getMonth()).toBe(5); // 6月 → 索引 5
-    expect(d?.getDate()).toBe(28);
-    expect(d?.getHours()).toBe(22);
+    // 2026-06-28 22:00 JST = 13:00 UTC
+    expect(d?.toISOString()).toBe("2026-06-28T13:00:00.000Z");
   });
-  it("解析日文不带时间", () => {
+  it("解析日文不带时间（JST 00:00）", () => {
     const d = parseLooseDate("2025年12月1日");
-    expect(d?.getFullYear()).toBe(2025);
-    expect(d?.getMonth()).toBe(11);
-    expect(d?.getDate()).toBe(1);
+    expect(d?.toISOString()).toBe("2025-11-30T15:00:00.000Z");
   });
-  it("解析点分/斜杠日期", () => {
-    expect(parseLooseDate("2026.5.29")?.getDate()).toBe(29);
-    expect(parseLooseDate("2026/05/07")?.getMonth()).toBe(4);
+  it("解析点分/斜杠日期为 JST 00:00", () => {
+    expect(parseLooseDate("2026.5.29")?.toISOString()).toBe("2026-05-28T15:00:00.000Z");
+    expect(parseLooseDate("2026/05/07")?.toISOString()).toBe("2026-05-06T15:00:00.000Z");
+  });
+  it("拒绝非法日历日", () => {
+    expect(parseLooseDate("2026年2月31日")).toBeUndefined();
+    expect(parseLooseDate("2026-02-31")).toBeUndefined();
   });
   it("无法解析返回 undefined", () => {
     expect(parseLooseDate("近日公開")).toBeUndefined();

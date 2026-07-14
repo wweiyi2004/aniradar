@@ -31,13 +31,18 @@ jobs:
       - name: Prisma generate
         run: pnpm db:generate
         env:
-          # generate 不连库，占位即可
-          DATABASE_URL: postgresql://aniradar:aniradar@localhost:5432/aniradar?schema=public
+          DATABASE_URL: file:../../../data/aniradar-ci.db
 
-      - name: Unit tests
+      - name: Unit + SQLite integration tests
         run: pnpm test
 
       - name: Typecheck
         run: pnpm typecheck
         env:
-          DATABASE_URL: postgresql://aniradar:aniradar@localhost:5432/aniradar?schema=public
+          DATABASE_URL: file:../../../data/aniradar-ci.db
+
+      - name: Production build
+        run: pnpm build
+        env:
+          DATABASE_URL: file:../../../data/aniradar-ci.db
+          ADMIN_PASSWORD: ci-only

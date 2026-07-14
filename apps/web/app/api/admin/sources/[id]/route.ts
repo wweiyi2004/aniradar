@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma, Prisma } from "@aniradar/db";
 import { parseSourcePatch } from "@/lib/source-input";
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     let body: unknown;
     try {
       body = await req.json();
@@ -31,9 +32,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           : (parsed.selectorConfig as Prisma.InputJsonValue);
     }
 
-    const src = await prisma.source.update({ where: { id: params.id }, data });
+    const src = await prisma.source.update({ where: { id }, data });
     return NextResponse.json(src);
   } catch (e: unknown) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 400 });
+    const code = (e as { code?: string })?.code;
+    if (code === "P2002") {
+      return NextResponse.json({ error: "该 URL 已存在" }, { status: 409 });
+    }
+    return NextResponse.json({ error: "更新失败" }, { status: 400 });
   }
 }

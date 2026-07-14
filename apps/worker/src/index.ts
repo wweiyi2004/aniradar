@@ -1,56 +1,66 @@
-import { Worker } from "bullmq";
-import { redisConnection } from "@aniradar/config";
-import { QUEUE_FETCH, QUEUE_CLASSIFY, QUEUE_REANALYZE, QUEUE_COMPOSE } from "@aniradar/shared";
-import { processFetch } from "./processFetch";
-import { processClassify } from "./processClassify";
-import { processReanalyze } from "./processReanalyze";
-import { processCompose } from "./processCompose";
+import { randomUUID } from "node:crypto";
+import {
+  acquireLease,
+  configureDatabase,
+  prisma,
+  recoverStaleJobs,
+  releaseLease,
+  renewLease,
+} from "@aniradar/db";
+import { env } from "@aniradar/config";
 import { startScheduler } from "./scheduler";
+import { startJobRunners } from "./jobRunner";
 
-const fetchWorker = new Worker(
-  QUEUE_FETCH,
-  async (job) =>
-    processFetch(job.data, {
-      attemptsMade: job.attemptsMade,
-      maxAttempts: job.opts.attempts ?? 1,
-    }),
-  { connection: redisConnection, concurrency: 4 },
-);
-// 合并需读取既有 Event 再决定挂载/新建，并发设为 1 避免同主题信号竞态产生重复事件。
-const classifyWorker = new Worker(
-  QUEUE_CLASSIFY,
-  async (job) =>
-    processClassify(job.data, {
-      attemptsMade: job.attemptsMade,
-      maxAttempts: job.opts.attempts ?? 1,
-    }),
-  { connection: redisConnection, concurrency: 1 },
-);
-const reanalyzeWorker = new Worker(QUEUE_REANALYZE, async (job) => processReanalyze(job.data), {
-  connection: redisConnection,
-  concurrency: 1,
-});
-// 合成只写自身 Event 的 bodyZh，无合并竞态，并发可高于 classify。
-const composeWorker = new Worker(QUEUE_COMPOSE, async (job) => processCompose(job.data), {
-  connection: redisConnection,
-  concurrency: 2,
-});
+const LEASE_NAME = "aniradar-worker";
+const ownerId = `${process.pid}-${randomUUID()}`;
 
-fetchWorker.on("failed", (j, e) => console.error("fetch failed", j?.id, e?.message));
-classifyWorker.on("failed", (j, e) => console.error("classify failed", j?.id, e?.message));
-reanalyzeWorker.on("failed", (j, e) => console.error("reanalyze failed", j?.id, e?.message));
-composeWorker.on("failed", (j, e) => console.error("compose failed", j?.id, e?.message));
-
-const timers = startScheduler();
-console.log("AniRadar worker started");
-
-async function shutdown() {
-  timers.forEach(clearInterval);
-  await fetchWorker.close();
-  await classifyWorker.close();
-  await reanalyzeWorker.close();
-  await composeWorker.close();
-  process.exit(0);
+await configureDatabase();
+if (!(await acquireLease(LEASE_NAME, ownerId, env.workerLeaseTtlMs))) {
+  console.error("已有 AniRadar worker 持有运行租约，本进程退出。");
+  await prisma.$disconnect();
+  process.exit(1);
 }
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+
+await recoverStaleJobs(env.jobLockTimeoutMs);
+const runners = startJobRunners(ownerId);
+const timers = startScheduler();
+const staleTimer = setInterval(() => {
+  recoverStaleJobs(env.jobLockTimeoutMs).catch((error) => console.error("stale job recovery failed", error));
+}, 30_000);
+let renewFailures = 0;
+const leaseTimer = setInterval(async () => {
+  try {
+    if (!(await renewLease(LEASE_NAME, ownerId, env.workerLeaseTtlMs))) {
+      console.error("worker 运行租约已丢失，准备退出。");
+      await shutdown(1);
+      return;
+    }
+    renewFailures = 0;
+  } catch (error) {
+    renewFailures += 1;
+    console.error("worker lease renewal failed", error);
+    // 连续失败接近 TTL 时退出，避免租约过期后本进程仍在跑、出现双 worker
+    if (renewFailures >= 3) {
+      console.error("worker lease renewal failed repeatedly，准备退出。");
+      await shutdown(1);
+    }
+  }
+}, Math.max(1000, Math.floor(env.workerLeaseTtlMs / 3)));
+
+console.log("AniRadar SQLite worker started");
+
+let shuttingDown = false;
+async function shutdown(exitCode = 0) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  timers.forEach(clearInterval);
+  clearInterval(staleTimer);
+  clearInterval(leaseTimer);
+  await runners.stop();
+  await releaseLease(LEASE_NAME, ownerId).catch(() => undefined);
+  await prisma.$disconnect();
+  process.exit(exitCode);
+}
+
+process.on("SIGINT", () => void shutdown());
+process.on("SIGTERM", () => void shutdown());

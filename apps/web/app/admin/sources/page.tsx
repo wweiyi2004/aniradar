@@ -1,5 +1,6 @@
 import { prisma } from "@aniradar/db";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
+import { AdminNav } from "@/components/admin-nav";
 import { SourceForm } from "./source-form";
 import { SourceRowActions } from "./actions";
 
@@ -13,6 +14,7 @@ export default async function SourcesPage() {
   const sources = await prisma.source.findMany({ orderBy: { createdAt: "desc" } });
   return (
     <div className="space-y-4">
+      <AdminNav active="/admin/sources" />
       <h1 className="text-xl font-bold">资讯源</h1>
       <SourceForm />
       <Table>

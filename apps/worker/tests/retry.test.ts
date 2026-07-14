@@ -11,6 +11,10 @@ describe("isTransientError", () => {
   it("常见网络错误视为瞬时", () => {
     expect(isTransientError({ code: "ECONNRESET" })).toBe(true);
   });
+  it("SQLite 锁与事务超时视为瞬时", () => {
+    expect(isTransientError({ code: "SQLITE_BUSY" })).toBe(true);
+    expect(isTransientError({ code: "P2028" })).toBe(true);
+  });
   it("无 code 的错误视为瞬时", () => {
     expect(isTransientError(new Error("boom"))).toBe(true);
   });

@@ -3,15 +3,26 @@ import { Button } from "@/components/ui/button";
 
 export function SourceRowActions({ id, enabled }: { id: string; enabled: boolean }) {
   async function toggle() {
-    await fetch(`/api/admin/sources/${id}`, {
+    const r = await fetch(`/api/admin/sources/${id}`, {
       method: "PATCH",
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({ enabled: !enabled }),
     });
+    if (!r.ok) {
+      const data = (await r.json().catch(() => ({}))) as { error?: string };
+      alert(data.error || "更新失败");
+      return;
+    }
     location.reload();
   }
   async function trigger() {
     const r = await fetch(`/api/admin/sources/${id}/fetch`, { method: "POST" });
-    alert(r.ok ? "已触发抓取" : "触发失败");
+    if (r.ok) {
+      alert("已触发抓取");
+      return;
+    }
+    const data = (await r.json().catch(() => ({}))) as { error?: string };
+    alert(data.error || "触发失败");
   }
   return (
     <div className="flex gap-2">

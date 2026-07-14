@@ -18,18 +18,19 @@ const PAGE_SIZE = 30;
 export default async function Home({
   searchParams,
 }: {
-  searchParams: { sort?: string; board?: string; q?: string; page?: string };
+  searchParams: Promise<{ sort?: string; board?: string; q?: string; page?: string }>;
 }) {
-  const sort = searchParams.sort === "hot" ? "hot" : "new";
-  const board = searchParams.board;
-  const q = searchParams.q?.trim() || undefined;
-  const page = Math.max(1, Number(searchParams.page) || 1);
+  const query = await searchParams;
+  const sort = query.sort === "hot" ? "hot" : "new";
+  const board = query.board;
+  const q = query.q?.trim() || undefined;
+  const page = Math.max(1, Number(query.page) || 1);
   const mediumWhere = board ? { medium: board } : {};
   const searchWhere = q
     ? {
         OR: [
-          { title: { contains: q, mode: "insensitive" as const } },
-          { titleZh: { contains: q, mode: "insensitive" as const } },
+          { title: { contains: q } },
+          { titleZh: { contains: q } },
         ],
       }
     : {};
@@ -47,8 +48,8 @@ export default async function Home({
       where: { status: { in: visible }, ...mediumWhere, ...searchWhere },
       orderBy:
         sort === "hot"
-          ? [{ heatScore: "desc" as const }, { publishedAt: { sort: "desc" as const, nulls: "last" as const } }]
-          : [{ publishedAt: { sort: "desc" as const, nulls: "last" as const } }, { firstSeenAt: "desc" as const }],
+          ? [{ heatScore: "desc" as const }, { publishedAt: "desc" as const }]
+          : [{ publishedAt: "desc" as const }, { firstSeenAt: "desc" as const }],
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       select: SELECT,

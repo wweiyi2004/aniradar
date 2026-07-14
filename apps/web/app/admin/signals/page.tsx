@@ -2,6 +2,7 @@ import { prisma } from "@aniradar/db";
 import { SIGNAL_STATUS } from "@aniradar/shared";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Select } from "@/components/ui/select";
+import { AdminNav } from "@/components/admin-nav";
 import { IgnoreButton } from "./ignore-button";
 
 export const dynamic = "force-dynamic";
@@ -9,11 +10,12 @@ export const dynamic = "force-dynamic";
 export default async function SignalsPage({
   searchParams,
 }: {
-  searchParams: { status?: string; sourceId?: string };
+  searchParams: Promise<{ status?: string; sourceId?: string }>;
 }) {
+  const query = await searchParams;
   const where: { status?: string; sourceId?: string } = {};
-  if (searchParams.status) where.status = searchParams.status;
-  if (searchParams.sourceId) where.sourceId = searchParams.sourceId;
+  if (query.status) where.status = query.status;
+  if (query.sourceId) where.sourceId = query.sourceId;
 
   const [signals, sources] = await Promise.all([
     prisma.signal.findMany({
@@ -27,9 +29,10 @@ export default async function SignalsPage({
 
   return (
     <div className="space-y-4">
+      <AdminNav active="/admin/signals" />
       <h1 className="text-xl font-bold">Signals</h1>
       <form className="flex flex-wrap gap-2 text-sm">
-        <Select name="status" defaultValue={searchParams.status ?? ""}>
+        <Select name="status" defaultValue={query.status ?? ""}>
           <option value="">全部状态</option>
           {SIGNAL_STATUS.map((s) => (
             <option key={s} value={s}>
@@ -37,7 +40,7 @@ export default async function SignalsPage({
             </option>
           ))}
         </Select>
-        <Select name="sourceId" defaultValue={searchParams.sourceId ?? ""}>
+        <Select name="sourceId" defaultValue={query.sourceId ?? ""}>
           <option value="">全部来源</option>
           {sources.map((s) => (
             <option key={s.id} value={s.id}>

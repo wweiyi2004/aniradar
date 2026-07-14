@@ -26,4 +26,22 @@ describe("buildEventFromSignal · 状态判定", () => {
     const ev = buildEventFromSignal({ ...base, confidence: 0.4, sourceType: "official_news" });
     expect(ev.status).toBe("needs_review");
   });
+  it("mock 来源即使高置信也不 auto_publish", () => {
+    const ev = buildEventFromSignal({
+      ...base,
+      confidence: 0.95,
+      sourceType: "official_news",
+      analysisSource: "mock",
+    });
+    expect(ev.status).toBe("draft_ai");
+  });
+  it("ai 来源 + 官方 + 高置信 → auto_published", () => {
+    const ev = buildEventFromSignal({
+      ...base,
+      confidence: 0.95,
+      sourceType: "official_news",
+      analysisSource: "ai",
+    });
+    expect(ev.status).toBe("auto_published");
+  });
 });

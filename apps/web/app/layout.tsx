@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <footer className="mt-12 border-t">
             <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-xs text-muted-foreground sm:px-6 lg:px-8">
               <p>© AniRadar · 聚合官方 News / 媒体 RSS / YouTube RSS，按首次发现时间整理。</p>
-              <Link href="/admin/sources" className="hover:text-foreground">
+              <Link href="/admin" className="hover:text-foreground">
                 管理后台
               </Link>
             </div>

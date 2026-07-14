@@ -1,4 +1,4 @@
-import { prisma } from "@aniradar/db";
+import { prisma, workKeyFromFacts } from "@aniradar/db";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Flame, PlayCircle } from "lucide-react";
@@ -17,10 +17,11 @@ export const dynamic = "force-dynamic";
 // 动态路由下，notFound() 的 HTTP 状态仍为 200（已知限制，实测 force-dynamic 与 auto 均如此）。
 // 用户体验正确，仅对爬虫的状态码语义有影响，影响轻微。
 
-export async function generateMetadata({ params }: { params: { id: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const publicStatus = [...getPublicEventStatuses()];
   const ev = await prisma.event.findFirst({
-    where: { id: params.id, status: { in: publicStatus } },
+    where: { id, status: { in: publicStatus } },
     select: { title: true, titleZh: true, summaryZh: true, imageUrl: true },
   });
   if (!ev) notFound();
@@ -45,10 +46,11 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
 
 const SECTION_HEAD = "border-b pb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground";
 
-export default async function EventDetail({ params }: { params: { id: string } }) {
+export default async function EventDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const publicStatus = [...getPublicEventStatuses()];
   const ev = await prisma.event.findFirst({
-    where: { id: params.id, status: { in: publicStatus } },
+    where: { id, status: { in: publicStatus } },
     include: { signals: { include: { source: true }, orderBy: { firstSeenAt: "asc" } } },
   });
   if (!ev) notFound();
@@ -58,14 +60,15 @@ export default async function EventDetail({ params }: { params: { id: string } }
     const w = (ev.facts as Record<string, unknown> | null)?.work;
     return typeof w === "string" && w.trim() ? w.trim() : null;
   })();
+  const relatedWorkKey = workKeyFromFacts(ev.facts);
   const related = work
     ? await prisma.event.findMany({
         where: {
           id: { not: ev.id },
           status: { in: publicStatus },
-          facts: { path: ["work"], equals: work },
+          workKey: relatedWorkKey,
         },
-        orderBy: [{ publishedAt: { sort: "desc", nulls: "last" } }, { firstSeenAt: "desc" }],
+        orderBy: [{ publishedAt: "desc" }, { firstSeenAt: "desc" }],
         take: 6,
         select: { id: true, title: true, titleZh: true, category: true, publishedAt: true, firstSeenAt: true },
       })

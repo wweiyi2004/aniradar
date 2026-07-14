@@ -14,6 +14,8 @@ describe("parseYouTubeRss", () => {
   });
   it("关键词过滤", () => {
     expect(isRelevantYouTube("本PV公開！")).toBe(true);
+    expect(isRelevantYouTube("キービジュアル解禁")).toBe(true);
     expect(isRelevantYouTube("日常 vlog")).toBe(false);
+    expect(isRelevantYouTube("OPAQUE.CLIP")).toBe(false);
   });
 });

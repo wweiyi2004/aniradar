@@ -46,8 +46,23 @@ export const YT_KEYWORDS = [
   "ノンクレジットED",
   "制作決定",
   "放送決定",
+  "キービジュアル",
+  "キャスト",
+  "スタッフ",
+  "第2期",
+  "第二期",
+  "続編",
+  "劇場版",
+  "主題歌",
 ];
 
 export function isRelevantYouTube(title: string): boolean {
-  return YT_KEYWORDS.some((k) => title.includes(k));
+  return YT_KEYWORDS.some((k) => {
+    // 短拉丁词（PV/CM/OP/ED）避免命中单词内部
+    if (/^[A-Z]{1,3}$/i.test(k)) {
+      const re = new RegExp(`(?:^|[^A-Za-z0-9])${k}(?:[^A-Za-z0-9]|$)`, "i");
+      return re.test(title);
+    }
+    return title.includes(k);
+  });
 }

@@ -22,7 +22,17 @@ describe("isBlockedIpv6Literal", () => {
     expect(isBlockedIpv6Literal("::1")).toBe(true);
     expect(isBlockedIpv6Literal("[::1]")).toBe(true);
     expect(isBlockedIpv6Literal("fe80::1")).toBe(true);
+    expect(isBlockedIpv6Literal("fe90::1")).toBe(true);
     expect(isBlockedIpv6Literal("fd00::1")).toBe(true);
+  });
+  it("blocks IPv4-mapped private/loopback/metadata (dotted and hex)", () => {
+    expect(isBlockedIpv6Literal("::ffff:127.0.0.1")).toBe(true);
+    expect(isBlockedIpv6Literal("[::ffff:127.0.0.1]")).toBe(true);
+    expect(isBlockedIpv6Literal("::ffff:7f00:1")).toBe(true);
+    expect(isBlockedIpv6Literal("[::ffff:7f00:1]")).toBe(true);
+    expect(isBlockedIpv6Literal("::ffff:a9fe:a9fe")).toBe(true); // 169.254.169.254
+    expect(isBlockedIpv6Literal("::ffff:c0a8:1")).toBe(true); // 192.168.0.1
+    expect(isBlockedIpv6Literal("::ffff:808:808")).toBe(false); // 8.8.8.8
   });
 });
 
@@ -38,9 +48,12 @@ describe("validateSourceUrl", () => {
   });
   it("rejects localhost and private ips", () => {
     expect(validateSourceUrl("http://localhost/admin").ok).toBe(false);
+    expect(validateSourceUrl("http://localhost./admin").ok).toBe(false);
     expect(validateSourceUrl("http://127.0.0.1:8080/").ok).toBe(false);
     expect(validateSourceUrl("http://192.168.0.1/").ok).toBe(false);
     expect(validateSourceUrl("http://169.254.169.254/latest/meta-data/").ok).toBe(false);
+    expect(validateSourceUrl("http://[::ffff:7f00:1]/").ok).toBe(false);
+    expect(validateSourceUrl("http://[::ffff:a9fe:a9fe]/latest/meta-data/").ok).toBe(false);
   });
   it("rejects embedded credentials", () => {
     expect(validateSourceUrl("https://user:pass@example.com/x").ok).toBe(false);

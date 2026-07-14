@@ -34,12 +34,30 @@ const MEDIUM_BAR: Record<string, string> = {
   other: "bg-muted-foreground",
 };
 
+function TimeKicker({ ev }: { ev: EventCardData }) {
+  const discovered = new Date(ev.firstSeenAt).getTime();
+  const published = ev.publishedAt ? new Date(ev.publishedAt).getTime() : null;
+  // 雷达感：默认展示「发现」时间；与源发布时间差 >1h 时再补发布时刻
+  const showBoth =
+    published !== null && Math.abs(discovered - published) > 60 * 60 * 1000;
+
+  if (showBoth && published !== null) {
+    return (
+      <>
+        <time className="font-mono">发现 {relTime(ev.firstSeenAt)}</time>
+        <time className="font-mono">发布 {relTime(ev.publishedAt!)}</time>
+      </>
+    );
+  }
+  return <time className="font-mono">发现 {relTime(ev.firstSeenAt)}</time>;
+}
+
 function Kicker({ ev }: { ev: EventCardData }) {
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
       <CategoryBadge category={ev.category} />
       <MediumBadge medium={ev.medium} />
-      <time className="font-mono">{relTime(ev.publishedAt ?? ev.firstSeenAt)}</time>
+      <TimeKicker ev={ev} />
       {ev._count.signals > 1 && (
         <span className="inline-flex items-center gap-0.5 font-medium text-orange-600 dark:text-orange-400">
           <Flame className="h-3 w-3" />

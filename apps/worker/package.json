@@ -15,8 +15,7 @@
     "@aniradar/db": "workspace:*",
     "@aniradar/sources": "workspace:*",
     "@aniradar/detector": "workspace:*",
-    "@aniradar/ai": "workspace:*",
-    "bullmq": "^5.21.0"
+    "@aniradar/ai": "workspace:*"
   },
   "devDependencies": { "tsx": "^4.19.0" }
 }

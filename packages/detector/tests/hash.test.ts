@@ -5,6 +5,9 @@ describe("normalizeUrl", () => {
   it("去除追踪参数与末尾斜杠、小写域名", () => {
     expect(normalizeUrl("https://EX.com/a/?utm_source=x&id=1")).toBe("https://ex.com/a?id=1");
   });
+  it("query 参数排序后一致", () => {
+    expect(normalizeUrl("https://ex.com/a?b=2&a=1")).toBe(normalizeUrl("https://ex.com/a?a=1&b=2"));
+  });
 });
 
 describe("computeSignalHash", () => {

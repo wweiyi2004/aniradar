@@ -8,7 +8,9 @@
     "build": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "generate": "prisma generate",
-    "migrate": "dotenv -e ../../.env -- prisma migrate dev --name init",
+    "migrate": "dotenv -e ../../.env -- prisma migrate dev",
+    "setup": "dotenv -e ../../.env -- prisma migrate deploy && dotenv -e ../../.env -- tsx prisma/seed.ts",
+    "import:postgres": "dotenv -e ../../.env -- prisma migrate deploy && dotenv -e ../../.env -- tsx prisma/importPostgres.ts",
     "seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
     "check:sources": "dotenv -e ../../.env -- tsx prisma/checkSeedSources.ts",
     "studio": "dotenv -e ../../.env -- prisma studio"
@@ -16,7 +18,12 @@
   "dependencies": {
     "@aniradar/shared": "workspace:*",
     "@aniradar/sources": "workspace:*",
-    "@prisma/client": "^5.20.0"
+    "@prisma/client": "^6.19.0"
   },
-  "devDependencies": { "prisma": "^5.20.0", "tsx": "^4.19.0" }
+  "devDependencies": {
+    "@types/pg": "^8.15.5",
+    "pg": "^8.16.3",
+    "prisma": "^6.19.0",
+    "tsx": "^4.19.0"
+  }
 }

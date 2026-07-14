@@ -1,7 +1,6 @@
-import { prisma } from "@aniradar/db";
+import { enqueueJob, jobKeys, prisma, workKeyFromFacts } from "@aniradar/db";
 import { isSameEvent } from "@aniradar/detector";
 import { mergeFacts } from "./facts";
-import { composeQueue } from "./queues";
 
 // 一次性清理：按新版 isSameEvent 把"同作品同分类、窗口内"的历史重复事件合并到最早的那个。
 // 默认 dry-run，只打印合并计划；设 APPLY=1 才真正执行。
@@ -54,6 +53,7 @@ async function main() {
       cur.publishedAt && from.publishedAt && from.publishedAt < cur.publishedAt
         ? from.publishedAt
         : (cur.publishedAt ?? from.publishedAt);
+    const facts = mergeFacts(cur.facts, (from.facts ?? {}) as Record<string, unknown>);
     await prisma.$transaction(async (tx) => {
       await tx.signal.updateMany({ where: { eventId: from.id }, data: { eventId: into.id } });
       await tx.event.update({
@@ -62,7 +62,8 @@ async function main() {
           heatScore: { increment: from.heatScore },
           publishedAt: earlier,
           medium: cur.medium ?? from.medium,
-          facts: mergeFacts(cur.facts, (from.facts ?? {}) as Record<string, unknown>) as object,
+          facts: facts as object,
+          workKey: workKeyFromFacts(facts),
           imageUrl: cur.imageUrl ?? from.imageUrl,
           videoUrl: cur.videoUrl ?? from.videoUrl,
           officialConfirmed: cur.officialConfirmed || from.officialConfirmed,
@@ -72,7 +73,11 @@ async function main() {
       });
       await tx.event.update({ where: { id: from.id }, data: { status: "merged" } });
     });
-    await composeQueue.add("compose", { eventId: into.id }); // 重新合成 primary 正文
+    await enqueueJob(prisma, {
+      type: "compose",
+      dedupeKey: jobKeys.compose(into.id, from.id),
+      payload: { eventId: into.id },
+    });
   }
   console.log(`dedupe done: merged ${merges.length} events`);
   process.exit(0);

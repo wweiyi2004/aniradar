@@ -9,7 +9,7 @@ export const RssAdapter: SourceAdapter = {
       lastModified: source.lastModified ?? undefined,
     });
     if (res.notModified) return { items: [], notModified: true };
-    const items = await parseRss(res.body);
+    const items = await parseRss(res.body, source.url);
     return { items, etag: res.etag, lastModified: res.lastModified };
   },
 };

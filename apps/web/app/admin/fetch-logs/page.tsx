@@ -1,5 +1,6 @@
 import { prisma } from "@aniradar/db";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
+import { AdminNav } from "@/components/admin-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ export default async function FetchLogsPage() {
   });
   return (
     <div className="space-y-4">
+      <AdminNav active="/admin/fetch-logs" />
       <h1 className="text-xl font-bold">抓取日志</h1>
       <Table>
         <THead>

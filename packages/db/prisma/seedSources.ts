@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
 // 全部为实测可达、返回有效内容的真实源。可用 `pnpm sources:check` 重新验证。
+// 抓取间隔策略（发现快）：S=300s，A media/YouTube=300–600s，A 官方站=600s，B=900s。
 export const seedSources: Prisma.SourceCreateInput[] = [
   {
     name: "アニメ！アニメ！",
@@ -8,7 +9,7 @@ export const seedSources: Prisma.SourceCreateInput[] = [
     type: "media",
     level: "A",
     fetchStrategy: "rss",
-    fetchIntervalSec: 600,
+    fetchIntervalSec: 300,
   },
   {
     name: "コミックナタリー",
@@ -16,7 +17,7 @@ export const seedSources: Prisma.SourceCreateInput[] = [
     type: "media",
     level: "A",
     fetchStrategy: "rss",
-    fetchIntervalSec: 600,
+    fetchIntervalSec: 300,
   },
   {
     name: "映画ナタリー",
@@ -40,7 +41,7 @@ export const seedSources: Prisma.SourceCreateInput[] = [
     type: "youtube_rss",
     level: "S",
     fetchStrategy: "youtube_rss",
-    fetchIntervalSec: 900,
+    fetchIntervalSec: 300,
   },
   {
     name: "TOHO animation YouTube",
@@ -48,7 +49,7 @@ export const seedSources: Prisma.SourceCreateInput[] = [
     type: "youtube_rss",
     level: "S",
     fetchStrategy: "youtube_rss",
-    fetchIntervalSec: 900,
+    fetchIntervalSec: 300,
   },
   {
     name: "KADOKAWAanime YouTube",
@@ -56,7 +57,7 @@ export const seedSources: Prisma.SourceCreateInput[] = [
     type: "youtube_rss",
     level: "S",
     fetchStrategy: "youtube_rss",
-    fetchIntervalSec: 900,
+    fetchIntervalSec: 300,
   },
   {
     name: "ぽにきゃん PONY CANYON Anime YouTube",
@@ -64,7 +65,7 @@ export const seedSources: Prisma.SourceCreateInput[] = [
     type: "youtube_rss",
     level: "A",
     fetchStrategy: "youtube_rss",
-    fetchIntervalSec: 1200,
+    fetchIntervalSec: 600,
   },
   {
     name: "京都アニメーション",
@@ -72,7 +73,7 @@ export const seedSources: Prisma.SourceCreateInput[] = [
     type: "company_news",
     level: "A",
     fetchStrategy: "rss",
-    fetchIntervalSec: 1800,
+    fetchIntervalSec: 600,
   },
   {
     name: "MAPPA",
@@ -80,7 +81,7 @@ export const seedSources: Prisma.SourceCreateInput[] = [
     type: "company_news",
     level: "A",
     fetchStrategy: "rss",
-    fetchIntervalSec: 1800,
+    fetchIntervalSec: 600,
   },
   {
     name: "CloverWorks",
@@ -88,7 +89,7 @@ export const seedSources: Prisma.SourceCreateInput[] = [
     type: "company_news",
     level: "A",
     fetchStrategy: "rss",
-    fetchIntervalSec: 1800,
+    fetchIntervalSec: 600,
   },
   {
     name: "ボンズ (Bones)",
@@ -96,7 +97,7 @@ export const seedSources: Prisma.SourceCreateInput[] = [
     type: "company_news",
     level: "A",
     fetchStrategy: "html_list",
-    fetchIntervalSec: 1800,
+    fetchIntervalSec: 600,
     selectorConfig: {
       listItem: ".nws-List li",
       title: ".title",
@@ -110,7 +111,7 @@ export const seedSources: Prisma.SourceCreateInput[] = [
     type: "company_news",
     level: "A",
     fetchStrategy: "html_list",
-    fetchIntervalSec: 1800,
+    fetchIntervalSec: 600,
     selectorConfig: {
       listItem: ".p-news__list li",
       title: ".p-news__list-title",
@@ -124,7 +125,7 @@ export const seedSources: Prisma.SourceCreateInput[] = [
     type: "media",
     level: "B",
     fetchStrategy: "html_list",
-    fetchIntervalSec: 1800,
+    fetchIntervalSec: 900,
     selectorConfig: {
       listItem: "li.clearfix",
       title: ".boxTtl",

@@ -2,6 +2,7 @@ import { prisma } from "@aniradar/db";
 import { EVENT_STATUS, EVENT_CATEGORIES } from "@aniradar/shared";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Select } from "@/components/ui/select";
+import { AdminNav } from "@/components/admin-nav";
 import { EventActions } from "./event-actions";
 
 export const dynamic = "force-dynamic";
@@ -9,11 +10,16 @@ export const dynamic = "force-dynamic";
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: { status?: string; category?: string };
+  searchParams: Promise<{ status?: string; category?: string }>;
 }) {
+  const query = await searchParams;
+  // 默认只看待审 needs_review；?status=all 看全部
+  const effectiveStatus =
+    query.status === undefined ? "needs_review" : query.status === "all" ? "" : query.status;
+
   const where: { status?: string; category?: string } = {};
-  if (searchParams.status) where.status = searchParams.status;
-  if (searchParams.category) where.category = searchParams.category;
+  if (effectiveStatus) where.status = effectiveStatus;
+  if (query.category) where.category = query.category;
 
   const events = await prisma.event.findMany({
     where: where as never,
@@ -24,17 +30,18 @@ export default async function EventsPage({
 
   return (
     <div className="space-y-4">
+      <AdminNav active="/admin/events" />
       <h1 className="text-xl font-bold">Events</h1>
       <form className="flex flex-wrap gap-2 text-sm">
-        <Select name="status" defaultValue={searchParams.status ?? ""}>
-          <option value="">全部状态</option>
+        <Select name="status" defaultValue={effectiveStatus || "all"}>
+          <option value="all">全部状态</option>
           {EVENT_STATUS.map((s) => (
             <option key={s} value={s}>
               {s}
             </option>
           ))}
         </Select>
-        <Select name="category" defaultValue={searchParams.category ?? ""}>
+        <Select name="category" defaultValue={query.category ?? ""}>
           <option value="">全部分类</option>
           {EVENT_CATEGORIES.map((s) => (
             <option key={s} value={s}>
@@ -59,7 +66,14 @@ export default async function EventsPage({
           {events.map((e) => (
             <TR key={e.id}>
               <TD className="max-w-md">
-                <a href={`/events/${e.id}`} className="hover:underline">
+                <a
+                  href={
+                    e.status === "published" || e.status === "auto_published"
+                      ? `/events/${e.id}`
+                      : `/admin/events/${e.id}`
+                  }
+                  className="hover:underline"
+                >
                   {e.titleZh || e.title}
                 </a>
               </TD>
@@ -74,6 +88,19 @@ export default async function EventsPage({
           ))}
         </TBody>
       </Table>
+      {events.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          当前筛选无结果。
+          {effectiveStatus === "needs_review" && (
+            <>
+              {" "}
+              <a href="/admin/events?status=all" className="text-primary hover:underline">
+                查看全部
+              </a>
+            </>
+          )}
+        </p>
+      )}
     </div>
   );
 }

@@ -41,16 +41,32 @@ export function isBlockedIpv4(host: string): boolean {
   return false;
 }
 
+/** 解析 IPv4-mapped IPv6 尾部（点分或十六进制，如 127.0.0.1 / 7f00:1）。 */
+function parseIpv4MappedTail(mapped: string): string | null {
+  if (isIpv4(mapped)) {
+    const parts = parseIpv4(mapped);
+    return parts ? parts.join(".") : null;
+  }
+  // WHATWG 常把 [::ffff:127.0.0.1] 规范成 [::ffff:7f00:1]
+  const hex = mapped.match(/^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
+  if (!hex) return null;
+  const hi = Number.parseInt(hex[1], 16);
+  const lo = Number.parseInt(hex[2], 16);
+  if (!Number.isFinite(hi) || !Number.isFinite(lo)) return null;
+  return [(hi >> 8) & 0xff, hi & 0xff, (lo >> 8) & 0xff, lo & 0xff].join(".");
+}
+
 /** 粗略识别 IPv6 字面量中的环回/链路本地/ULA（含 [::1]、[fe80::]、[fc00::]/[fd00::]）。 */
 export function isBlockedIpv6Literal(host: string): boolean {
   const h = host.replace(/^\[|\]$/g, "").toLowerCase();
   if (h === "::" || h === "::1") return true;
-  if (h.startsWith("fe80:")) return true; // link-local
+  if (/^fe[89ab]/.test(h)) return true; // link-local fe80::/10
   if (h.startsWith("fc") || h.startsWith("fd")) return true; // ULA
+  if (h.startsWith("ff")) return true; // multicast
   if (h.startsWith("::ffff:")) {
-    // IPv4-mapped：检查内嵌 IPv4
-    const mapped = h.slice("::ffff:".length);
-    if (isBlockedIpv4(mapped)) return true;
+    // IPv4-mapped：点分与十六进制两种尾部都要拦私网/环回/元数据
+    const mapped = parseIpv4MappedTail(h.slice("::ffff:".length));
+    if (mapped && isBlockedIpv4(mapped)) return true;
   }
   return false;
 }
@@ -76,7 +92,7 @@ export function validateSourceUrl(raw: unknown): UrlValidationResult {
   if (u.username || u.password) {
     return { ok: false, error: "url 不允许内嵌用户名/密码" };
   }
-  const host = u.hostname.toLowerCase();
+  const host = u.hostname.toLowerCase().replace(/\.$/, "");
   if (!host) return { ok: false, error: "url 缺少主机名" };
   if (BLOCKED_HOSTNAMES.has(host)) {
     return { ok: false, error: "url 主机名不允许（环回/元数据）" };
@@ -84,7 +100,6 @@ export function validateSourceUrl(raw: unknown): UrlValidationResult {
   if (isBlockedIpv4(host) || isBlockedIpv6Literal(host)) {
     return { ok: false, error: "url 不允许指向私网/环回地址" };
   }
-  // 末尾点域名（localhost.）等
   if (host.endsWith(".localhost") || host.endsWith(".local")) {
     return { ok: false, error: "url 主机名不允许（.localhost/.local）" };
   }

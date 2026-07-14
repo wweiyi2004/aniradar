@@ -6,6 +6,8 @@ export interface BuildEventInput {
   confidence: number;
   firstSeenAt: Date;
   sourceType: SourceType;
+  /** 仅真实 AI 结果允许 auto_publish；mock/规则回退禁止自动上公开流 */
+  analysisSource?: "ai" | "mock" | "prefilter";
 }
 
 export interface BuiltEvent {
@@ -25,7 +27,9 @@ export const MIN_PUBLIC_CONFIDENCE = 0.6;
 
 export function buildEventFromSignal(input: BuildEventInput): BuiltEvent {
   const official = input.sourceType === "official_news" || input.sourceType === "youtube_rss";
-  const autoPublish = AUTO_PUBLISH_TYPES.includes(input.sourceType) && input.confidence >= 0.9;
+  const fromAi = !input.analysisSource || input.analysisSource === "ai";
+  const autoPublish =
+    fromAi && AUTO_PUBLISH_TYPES.includes(input.sourceType) && input.confidence >= 0.9;
   const status: EventStatus = autoPublish
     ? "auto_published"
     : input.confidence >= MIN_PUBLIC_CONFIDENCE

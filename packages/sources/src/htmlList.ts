@@ -10,8 +10,13 @@ export const HtmlListAdapter: SourceAdapter = {
     if (res.notModified) return { items: [], notModified: true };
     const cfg = asSelectorConfig(source.selectorConfig);
     const items = parseHtmlList(res.body, cfg, source.url);
-    // 列表指纹：URL 集合的 hash。未变化则跳过。
-    const listHash = computeContentHash(items.map((i) => i.url).join("|"));
+    // 列表指纹：url|title|date，标题/日期变更也会触发重新入库
+    const listHash = computeContentHash(
+      items
+        .map((i) => `${i.url}\t${i.title}\t${i.publishedAt?.toISOString() ?? ""}`)
+        .sort()
+        .join("\n"),
+    );
     if (source.lastSeenHash && source.lastSeenHash === listHash) {
       return { items: [], notModified: true };
     }
