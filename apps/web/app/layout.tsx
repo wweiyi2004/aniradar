@@ -5,25 +5,10 @@ import { headers } from "next/headers";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SiteHeader } from "@/components/site-header";
 import { fontDisplay, fontMono } from "./fonts";
+import { resolveOrigin } from "@/lib/origin";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const requestHeaders = await headers();
-  const host = (
-    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host")
-  )
-    ?.split(",")[0]
-    .trim();
-  const forwardedProtocol = requestHeaders
-    .get("x-forwarded-proto")
-    ?.split(",")[0]
-    .trim();
-  const protocol =
-    forwardedProtocol === "http" || forwardedProtocol === "https"
-      ? forwardedProtocol
-      : host?.startsWith("localhost") || host?.startsWith("127.0.0.1")
-        ? "http"
-        : "https";
-  const origin = host ? `${protocol}://${host}` : undefined;
+  const origin = resolveOrigin(await headers());
   const imageUrl = origin ? `${origin}/og.png` : undefined;
   const title = "AniRadar · 次元情报站";
   const description = "实时捕捉动画、漫画、游戏与轻小说的新情报。";
