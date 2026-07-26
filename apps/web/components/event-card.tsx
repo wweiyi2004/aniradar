@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Flame } from "lucide-react";
+import { ArrowUpRight, Flame, Radio, Sparkles } from "lucide-react";
 import { CategoryBadge } from "./category-badge";
 import { MediumBadge } from "./medium-badge";
 import { relTime, CATEGORY_LABEL } from "@/lib/format";
@@ -65,7 +65,9 @@ function Kicker({ ev }: { ev: EventCardData }) {
         </span>
       )}
       {ev.officialConfirmed && (
-        <span className="font-medium text-emerald-600 dark:text-emerald-400">官方</span>
+        <span className="font-medium text-emerald-600 dark:text-emerald-400">
+          官方
+        </span>
       )}
       {ev.status === "draft_ai" && (
         <span className="text-amber-600 dark:text-amber-400">AI 草稿</span>
@@ -86,104 +88,141 @@ export function EventCard({
 
   if (variant === "hero") {
     return (
-      <Link href={href} className="group grid gap-5">
-        {ev.imageUrl ? (
-          <>
-            <img
-              src={ev.imageUrl}
-              alt=""
-              className="aspect-[16/9] w-full rounded-xl object-cover"
-            />
-            <div className="space-y-3">
-              <Kicker ev={ev} />
-              <h2 className="font-display text-2xl font-bold leading-tight group-hover:text-primary sm:text-3xl lg:text-4xl">
-                {title}
-              </h2>
-              {ev.summaryZh && (
-                <p className="line-clamp-3 max-w-2xl text-base leading-7 text-muted-foreground">
-                  {ev.summaryZh}
-                </p>
-              )}
+      <Link
+        href={href}
+        className="anime-card group relative grid min-h-[350px] overflow-hidden md:grid-cols-[1.05fr_0.95fr]"
+      >
+        <div className="relative z-10 flex flex-col justify-between gap-8 p-6 sm:p-8">
+          <div>
+            <div className="mb-5 inline-flex rotate-[-2deg] items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-xs font-bold text-accent-foreground shadow-sm">
+              <Sparkles className="h-3.5 w-3.5" />
+              今日焦点
             </div>
-          </>
-        ) : (
-          <div className="space-y-3 border-l-4 border-primary pl-5">
             <Kicker ev={ev} />
-            <h2 className="font-display text-3xl font-bold leading-tight group-hover:text-primary sm:text-4xl">
+            <h2 className="mt-4 font-display text-3xl font-bold leading-[1.15] tracking-tight transition-colors group-hover:text-primary sm:text-4xl">
               {title}
             </h2>
             {ev.summaryZh && (
-              <p className="line-clamp-3 max-w-2xl text-base leading-7 text-muted-foreground">
+              <p className="mt-4 line-clamp-3 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
                 {ev.summaryZh}
               </p>
             )}
           </div>
-        )}
+          <span className="inline-flex w-fit items-center gap-2 text-sm font-bold text-primary">
+            查看完整情报
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 transition-transform group-hover:translate-x-1">
+              <ArrowUpRight className="h-4 w-4" />
+            </span>
+          </span>
+          <div className="pointer-events-none absolute -bottom-20 -left-16 h-52 w-52 rounded-full bg-primary/10 blur-3xl" />
+        </div>
+
+        <div className="relative min-h-64 overflow-hidden bg-muted md:min-h-full">
+          {ev.imageUrl ? (
+            <img
+              src={ev.imageUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 via-accent/10 to-sky-400/20">
+              <div className="relative flex h-36 w-36 items-center justify-center rounded-full border border-primary/20 bg-background/50 shadow-inner">
+                <Radio className="h-14 w-14 text-primary/70" />
+                <span className="signal-dot absolute right-7 top-7 h-3 w-3 rounded-full bg-accent" />
+              </div>
+            </div>
+          )}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-foreground/15 to-transparent md:bg-gradient-to-r md:from-card/25 md:to-transparent" />
+          <span className="absolute right-4 top-4 rounded-full border border-white/30 bg-black/35 px-3 py-1 font-mono text-[10px] font-medium uppercase tracking-wider text-white backdrop-blur-md">
+            radar pick
+          </span>
+        </div>
       </Link>
     );
   }
 
   if (variant === "grid") {
     return (
-      <Link href={href} className="group flex flex-col gap-3">
-        {ev.imageUrl ? (
-          <img
-            src={ev.imageUrl}
-            alt=""
-            className="aspect-[16/10] w-full rounded-lg object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="relative flex aspect-[16/10] w-full items-end overflow-hidden rounded-lg bg-muted p-4">
-            <span
-              className={`absolute inset-x-0 top-0 h-[3px] ${MEDIUM_BAR[ev.medium ?? "other"] ?? MEDIUM_BAR.other}`}
+      <Link
+        href={href}
+        className="anime-card group grid min-h-36 grid-cols-[112px_minmax(0,1fr)] overflow-hidden"
+      >
+        <div className="relative overflow-hidden bg-muted">
+          {ev.imageUrl ? (
+            <img
+              src={ev.imageUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
             />
-            <span className="font-display text-2xl font-bold text-muted-foreground/40">
-              {CATEGORY_LABEL[ev.category] ?? ev.category}
-            </span>
-          </div>
-        )}
-        <div className="space-y-2">
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/15 to-accent/15">
+              <span
+                className={`absolute inset-y-0 left-0 w-1 ${MEDIUM_BAR[ev.medium ?? "other"] ?? MEDIUM_BAR.other}`}
+              />
+              <span className="font-display text-2xl font-bold text-primary/30">
+                {CATEGORY_LABEL[ev.category] ?? ev.category}
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="flex min-w-0 flex-col justify-center p-4">
           <Kicker ev={ev} />
-          <h3 className="line-clamp-2 text-base font-bold leading-snug group-hover:text-primary">
+          <h3 className="mt-2 line-clamp-3 text-sm font-bold leading-snug transition-colors group-hover:text-primary sm:text-base">
             {title}
           </h3>
+          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+            继续阅读 <ArrowUpRight className="h-3 w-3" />
+          </span>
         </div>
       </Link>
     );
   }
 
-  const keyFact = buildFactRows(ev.medium, ev.category, ev.facts).find((r) => "value" in r) as
-    | { label: string; value: string }
-    | undefined;
+  const keyFact = buildFactRows(ev.medium, ev.category, ev.facts).find(
+    (r) => "value" in r,
+  ) as { label: string; value: string } | undefined;
 
   return (
     <Link
       href={href}
-      className="group grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 py-5"
+      className="group grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 rounded-2xl px-1 py-5 transition-colors hover:bg-muted/45 sm:px-2"
     >
       <div className="min-w-0 space-y-2">
         <Kicker ev={ev} />
-        <h3 className="line-clamp-2 text-lg font-bold leading-snug group-hover:text-primary sm:text-xl">
+        <h3 className="line-clamp-2 text-lg font-bold leading-snug transition-colors group-hover:text-primary sm:text-xl">
           {title}
         </h3>
         {ev.summaryZh && (
-          <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">{ev.summaryZh}</p>
+          <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
+            {ev.summaryZh}
+          </p>
         )}
         {keyFact && (
-          <p className="inline-flex max-w-full items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs">
-            <span className="shrink-0 text-muted-foreground">{keyFact.label}</span>
-            <span className="truncate">{keyFact.value}</span>
+          <p className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs">
+            <span className="shrink-0 font-medium text-primary">
+              {keyFact.label}
+            </span>
+            <span className="truncate text-muted-foreground">
+              {keyFact.value}
+            </span>
           </p>
         )}
       </div>
-      {ev.imageUrl && (
-        <img
-          src={ev.imageUrl}
-          alt=""
-          className="hidden h-24 w-40 rounded-md object-cover sm:block"
-          loading="lazy"
-        />
+      {ev.imageUrl ? (
+        <div className="relative h-20 w-20 overflow-hidden rounded-2xl bg-muted sm:h-24 sm:w-36">
+          <img
+            src={ev.imageUrl}
+            alt=""
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+          <span className="absolute inset-0 ring-1 ring-inset ring-black/5" />
+        </div>
+      ) : (
+        <span className="mt-1 hidden h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary sm:flex">
+          <ArrowUpRight className="h-4 w-4" />
+        </span>
       )}
     </Link>
   );
