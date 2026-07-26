@@ -7,6 +7,7 @@ import {
   claimDailyRun,
   cleanupFetchLogs,
   decayHeatScores,
+  pruneSignalRawText,
 } from "../src/maintenance";
 
 const TEST_SOURCE_URL = "https://example.com/maintenance-test";
@@ -165,5 +166,58 @@ describe.sequential("maintenance: heat decay", () => {
     expect(await claimDailyRun(LEASE_NAME, day1)).toBe(true);
     expect(await claimDailyRun(LEASE_NAME, new Date("2026-07-26T10:00:00Z"))).toBe(false);
     expect(await claimDailyRun(LEASE_NAME, new Date("2026-07-27T08:00:00Z"))).toBe(true);
+  });
+});
+
+describe.sequential("maintenance: pruneSignalRawText", () => {
+  const SOURCE_URL = "https://example.com/maintenance-prune-test";
+  const HASH_PREFIX = "prune-test-";
+
+  beforeEach(async () => {
+    await configureDatabase();
+    await prisma.source.deleteMany({ where: { url: SOURCE_URL } });
+  });
+
+  afterAll(async () => {
+    await prisma.source.deleteMany({ where: { url: SOURCE_URL } });
+    await prisma.$disconnect();
+  });
+
+  it("clears rawText only for settled signals outside the reanalyze window", async () => {
+    const source = await prisma.source.create({
+      data: { name: "瘦身测试源", url: SOURCE_URL, type: "official_news", fetchStrategy: "rss" },
+    });
+    const now = new Date("2026-07-26T00:00:00Z");
+    // 默认窗口 168h(7 天):10 天前为窗口外,1 天前为窗口内。
+    const outside = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+    const inside = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
+    const mk = (hash: string, status: "merged" | "ignored" | "classified", firstSeenAt: Date) =>
+      prisma.signal.create({
+        data: {
+          sourceId: source.id,
+          title: `瘦身测试 ${hash}`,
+          url: `${SOURCE_URL}/${hash}`,
+          hash: `${HASH_PREFIX}${hash}`,
+          rawText: "正文全文……",
+          status,
+          firstSeenAt,
+        },
+      });
+    const [oldMerged, oldIgnored, oldClassified, freshMerged] = await Promise.all([
+      mk("old-merged", "merged", outside),
+      mk("old-ignored", "ignored", outside),
+      mk("old-classified", "classified", outside),
+      mk("fresh-merged", "merged", inside),
+    ]);
+
+    const pruned = await pruneSignalRawText(now);
+
+    expect(pruned).toBe(2);
+    const byId = async (id: string) =>
+      (await prisma.signal.findUniqueOrThrow({ where: { id }, select: { rawText: true } })).rawText;
+    expect(await byId(oldMerged.id)).toBeNull();
+    expect(await byId(oldIgnored.id)).toBeNull();
+    expect(await byId(oldClassified.id)).toBe("正文全文……");
+    expect(await byId(freshMerged.id)).toBe("正文全文……");
   });
 });

@@ -37,6 +37,25 @@ function escapeRegExp(value: string): string {
 }
 
 /**
+ * 清空已定局且超出 reanalyze 窗口的 Signal.rawText(正文全文是库体积大头):
+ * - ignored:窗口外不会再被重分析;若人工恢复,重分类退化为仅标题输入(概率极低,可接受);
+ * - merged:文本已并入主事件的 bodyZh,详情页来源摘录退回 summary。
+ * 标题/链接/摘要等元数据保留,追溯链路不受影响。返回清空条数。
+ */
+export async function pruneSignalRawText(now = new Date()): Promise<number> {
+  const cutoff = new Date(now.getTime() - env.reanalyzeWindowHours * 60 * 60 * 1000);
+  const result = await prisma.signal.updateMany({
+    where: {
+      rawText: { not: null },
+      status: { in: ["merged", "ignored"] },
+      firstSeenAt: { lt: cutoff },
+    },
+    data: { rawText: null },
+  });
+  return result.count;
+}
+
+/**
  * "每日至多一次"的幂等标记:借 RuntimeLease 表记录 <name, 当天日期戳>,
  * 抢到(当天首次)返回 true。零 migration,worker 重启不会重复执行。
  */
