@@ -16,6 +16,16 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title,
     description,
+    alternates: {
+      types: {
+        "application/rss+xml": [
+          {
+            url: origin ? `${origin}/feed.xml` : "/feed.xml",
+            title: "AniRadar 情报流 RSS",
+          },
+        ],
+      },
+    },
     openGraph: {
       title,
       description,
