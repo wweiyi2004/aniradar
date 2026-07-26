@@ -198,7 +198,17 @@ export default async function EventDetail({ params }: { params: Promise<{ id: st
 
         {related.length > 0 && (
           <section className="anime-card space-y-4 p-5 sm:p-6">
-            <h2 className={SECTION_HEAD}>同作品情报 · {work}</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className={SECTION_HEAD}>同作品情报 · {work}</h2>
+              {relatedWorkKey && (
+                <Link
+                  href={`/works/${encodeURIComponent(relatedWorkKey)}`}
+                  className="shrink-0 text-xs font-semibold text-primary hover:underline"
+                >
+                  作品档案 →
+                </Link>
+              )}
+            </div>
             <ul className="space-y-3">
               {related.map((r) => (
                 <li key={r.id}>
