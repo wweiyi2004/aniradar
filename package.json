@@ -16,6 +16,8 @@
     "start": "pnpm db:setup && concurrently -k -n web,worker -c cyan,magenta \"pnpm --filter @aniradar/web start\" \"pnpm --filter @aniradar/worker start\"",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "dotenv -e .env.test -- tsx scripts/ensureEnv.ts && dotenv -e .env.test -- pnpm --filter @aniradar/db run setup && dotenv -e .env.test -- vitest run"
   },
   "devDependencies": {

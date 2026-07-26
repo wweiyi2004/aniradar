@@ -1,0 +1,11 @@
+# 构建产物与数据
+.next/
+dist/
+data/
+apps/web/public/
+pnpm-lock.yaml
+*.tsbuildinfo
+
+# 生成/外部内容
+docs/superpowers/
+packages/db/prisma/migrations/

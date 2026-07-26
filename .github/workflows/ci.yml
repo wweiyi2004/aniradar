@@ -33,6 +33,9 @@ jobs:
         env:
           DATABASE_URL: file:../../../data/aniradar-ci.db
 
+      - name: Prettier check
+        run: pnpm format:check
+
       - name: Unit + SQLite integration tests
         run: pnpm test
 
