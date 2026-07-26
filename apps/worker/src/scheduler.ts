@@ -1,7 +1,7 @@
 import { enqueueJob, jobKeys, prisma } from "@aniradar/db";
 import { env } from "@aniradar/config";
 import { isAiConfigured } from "@aniradar/ai";
-import { cleanupFetchLogs } from "./maintenance";
+import { backupDatabase, cleanupFetchLogs } from "./maintenance";
 
 // 维护任务(FetchLog 清理等)幂等且开销小,6 小时一轮足够。
 const MAINTENANCE_INTERVAL_MS = 6 * 60 * 60 * 1000;
@@ -50,9 +50,21 @@ export async function reanalyzeTick(): Promise<void> {
 }
 
 export async function maintenanceTick(): Promise<void> {
-  const removed = await cleanupFetchLogs();
-  if (removed > 0) {
-    console.log(`maintenance: 清理 ${removed} 条过期 FetchLog`);
+  try {
+    const removed = await cleanupFetchLogs();
+    if (removed > 0) {
+      console.log(`maintenance: 清理 ${removed} 条过期 FetchLog`);
+    }
+  } catch (e) {
+    console.error("maintenance: FetchLog 清理失败", e);
+  }
+  try {
+    const backup = await backupDatabase();
+    if (backup) {
+      console.log(`maintenance: 数据库已备份到 ${backup}`);
+    }
+  } catch (e) {
+    console.error("maintenance: 数据库备份失败", e);
   }
 }
 

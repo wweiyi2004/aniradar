@@ -1,6 +1,8 @@
+import { readFile, readdir, rm } from "node:fs/promises";
+import path from "node:path";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { configureDatabase, prisma } from "@aniradar/db";
-import { cleanupFetchLogs } from "../src/maintenance";
+import { backupDatabase, cleanupFetchLogs } from "../src/maintenance";
 
 const TEST_SOURCE_URL = "https://example.com/maintenance-test";
 
@@ -72,5 +74,51 @@ describe.sequential("maintenance: cleanupFetchLogs", () => {
       where: { sourceId: source.id },
     });
     expect(left).toBe(1);
+  });
+});
+
+describe.sequential("maintenance: backupDatabase", () => {
+  // 独立目录,避免碰真实 data/backups/
+  const dir = path.join(process.cwd(), "data", "test-backups");
+
+  beforeEach(async () => {
+    await configureDatabase();
+    await rm(dir, { recursive: true, force: true });
+    delete process.env.BACKUP_KEEP;
+  });
+
+  afterAll(async () => {
+    await rm(dir, { recursive: true, force: true });
+    delete process.env.BACKUP_KEEP;
+    await prisma.$disconnect();
+  });
+
+  it("creates a valid SQLite backup, at most one per day", async () => {
+    // 两个时刻在 UTC 与 UTC+8 都属于同一天,避免时区导致判定漂移。
+    const first = await backupDatabase(new Date("2026-07-26T08:00:00Z"), dir);
+    expect(first).not.toBeNull();
+    const head = await readFile(first!);
+    expect(head.subarray(0, 15).toString("latin1")).toBe("SQLite format 3");
+
+    const again = await backupDatabase(new Date("2026-07-26T10:00:00Z"), dir);
+    expect(again).toBeNull();
+    expect(await readdir(dir)).toHaveLength(1);
+  });
+
+  it("rotates old backups beyond BACKUP_KEEP", async () => {
+    process.env.BACKUP_KEEP = "2";
+    await backupDatabase(new Date("2026-07-01T02:00:00Z"), dir);
+    await backupDatabase(new Date("2026-07-02T02:00:00Z"), dir);
+    await backupDatabase(new Date("2026-07-03T02:00:00Z"), dir);
+
+    const files = (await readdir(dir)).sort();
+    expect(files).toHaveLength(2);
+    expect(files.some((f) => f.includes("20260701"))).toBe(false);
+  });
+
+  it("is disabled when BACKUP_KEEP=0", async () => {
+    process.env.BACKUP_KEEP = "0";
+    const out = await backupDatabase(new Date("2026-07-26T08:00:00Z"), dir);
+    expect(out).toBeNull();
   });
 });

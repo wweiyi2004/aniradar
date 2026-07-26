@@ -49,6 +49,7 @@ pnpm dev
 访问：
 
 - 前台：http://localhost:3000
+- RSS：http://localhost:3000/feed.xml（可加 `?board=anime` 等按板块过滤）
 - 后台：http://localhost:3000/admin/sources
 
 Windows 也可双击 `start.cmd`；macOS/Linux 可运行 `./start.sh`。
@@ -121,7 +122,7 @@ pnpm db:import:postgres -- --force
 1. 将项目和 `data/` 放在持久本地磁盘；
 2. 用 `pnpm start` 同时运行 Web/Worker；
 3. 仅让 Next.js 监听本机端口，通过反向代理提供 HTTPS；
-4. 为 `data/aniradar.db` 做定期在线备份；
+4. Worker 每日自动 `VACUUM INTO` 备份到 `data/backups/`（保留 `BACKUP_KEEP` 份，默认 7）；仍建议周期性把备份同步到异地；
 5. 发布前停止服务或完成 SQLite checkpoint 后再复制数据库文件。
 
 此架构适合单服务器的小到中等抓取量。若未来需要多服务器、共享存储或大量并发写入，应迁回共享 PostgreSQL 与分布式队列。
