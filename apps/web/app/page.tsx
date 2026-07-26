@@ -2,6 +2,7 @@ import { prisma } from "@aniradar/db";
 import { EventCard } from "@/components/event-card";
 import { BoardTabs } from "@/components/board-tabs";
 import { RightRail } from "@/components/right-rail";
+import { searchEventIdsByFts, toFtsQuery } from "@/lib/event-search";
 import { getPublicEventStatuses } from "@/lib/public-status";
 import { sanitizeSearchQuery } from "@/lib/search";
 import { startOfToday } from "@/lib/today";
@@ -54,23 +55,44 @@ export default async function Home({
   // 默认不含 draft_ai；PUBLIC_SHOW_DRAFT=true 时可露出草稿。
   const visible = [...getPublicEventStatuses()];
 
+  // 搜索优先走 FTS5(trigram):词均 >=3 字符时子串匹配 + 相关排序都在索引上完成;
+  // 更短的查询回退 LIKE(searchWhere)。
+  const ftsMatch = q ? toFtsQuery(q) : null;
+  const ftsResult = ftsMatch
+    ? await searchEventIdsByFts({
+        match: ftsMatch,
+        statuses: visible,
+        medium: board,
+        sort,
+        limit: PAGE_SIZE,
+        offset: (page - 1) * PAGE_SIZE,
+      })
+    : null;
+
   // 信息流永远是完整的时间线（最新在前），热门事件不从流中排除；
   // hero 只是“聚光灯”，与流中条目允许重复（杂志式做法）。
   // publishedAt 可空：nulls last，避免缺发布时间的事件被 Postgres DESC 顶到最前。
   const [mainEvents, totalMain, hotEvents, todayCount, sourceAgg] = await Promise.all([
-    prisma.event.findMany({
-      where: { status: { in: visible }, ...mediumWhere, ...searchWhere },
-      orderBy:
-        sort === "hot"
-          ? [{ heatScore: "desc" as const }, { publishedAt: "desc" as const }]
-          : [{ publishedAt: "desc" as const }, { firstSeenAt: "desc" as const }],
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-      select: SELECT,
-    }),
-    prisma.event.count({
-      where: { status: { in: visible }, ...mediumWhere, ...searchWhere },
-    }),
+    ftsResult
+      ? prisma.event.findMany({
+          where: { id: { in: ftsResult.ids } },
+          select: SELECT,
+        })
+      : prisma.event.findMany({
+          where: { status: { in: visible }, ...mediumWhere, ...searchWhere },
+          orderBy:
+            sort === "hot"
+              ? [{ heatScore: "desc" as const }, { publishedAt: "desc" as const }]
+              : [{ publishedAt: "desc" as const }, { firstSeenAt: "desc" as const }],
+          skip: (page - 1) * PAGE_SIZE,
+          take: PAGE_SIZE,
+          select: SELECT,
+        }),
+    ftsResult
+      ? Promise.resolve(ftsResult.total)
+      : prisma.event.count({
+          where: { status: { in: visible }, ...mediumWhere, ...searchWhere },
+        }),
     // 近 7 天热门：一次查询同时供 hero（前 5 条）与右栏热度榜（6 条）。
     prisma.event.findMany({
       where: {
@@ -92,6 +114,12 @@ export default async function Home({
       _max: { lastSuccessAt: true },
     }),
   ]);
+
+  // findMany({ id: { in } }) 不保证顺序,按 FTS 排序结果重排。
+  if (ftsResult) {
+    const order = new Map(ftsResult.ids.map((id, i) => [id, i]));
+    mainEvents.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+  }
 
   const heatTop = hotEvents.map((e) => ({
     id: e.id,
