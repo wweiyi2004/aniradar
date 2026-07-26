@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  WORKER_LEASE_NAME,
   acquireLease,
   configureDatabase,
   prisma,
@@ -11,7 +12,7 @@ import { env } from "@aniradar/config";
 import { startScheduler } from "./scheduler";
 import { startJobRunners } from "./jobRunner";
 
-const LEASE_NAME = "aniradar-worker";
+const LEASE_NAME = WORKER_LEASE_NAME;
 const ownerId = `${process.pid}-${randomUUID()}`;
 
 await configureDatabase();

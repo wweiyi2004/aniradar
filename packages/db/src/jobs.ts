@@ -10,6 +10,9 @@ export interface EnqueueJobSpec {
   maxAttempts?: number;
 }
 
+/** Worker 单实例运行租约名;后台用它读取 worker 心跳状态。 */
+export const WORKER_LEASE_NAME = "aniradar-worker";
+
 const POLICY: Record<JobType, { maxAttempts: number; backoffMs: number }> = {
   fetch: { maxAttempts: 3, backoffMs: 5000 },
   classify: { maxAttempts: 3, backoffMs: 2000 },

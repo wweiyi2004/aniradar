@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@aniradar/db";
+import { WORKER_LEASE_NAME, prisma } from "@aniradar/db";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { AdminNav } from "@/components/admin-nav";
 import { StatusBadge } from "@/components/status-badge";
@@ -14,23 +14,29 @@ export default async function AdminHomePage() {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
-  const [queue, reviewCount, todayPublic, failingSources, pendingJobs] = await Promise.all([
-    prisma.event.findMany({
-      where: { status: { in: [...REVIEW_STATUSES] } },
-      orderBy: { firstSeenAt: "desc" },
-      take: 50,
-      include: { _count: { select: { signals: true } } },
-    }),
-    prisma.event.count({ where: { status: { in: [...REVIEW_STATUSES] } } }),
-    prisma.event.count({
-      where: {
-        status: { in: ["published", "auto_published"] },
-        publishedAt: { gte: startOfToday },
-      },
-    }),
-    prisma.source.count({ where: { enabled: true, failureCount: { gt: 0 } } }),
-    prisma.job.count({ where: { status: "pending" } }),
-  ]);
+  const [queue, reviewCount, todayPublic, failingSources, pendingJobs, failedJobs, workerLease] =
+    await Promise.all([
+      prisma.event.findMany({
+        where: { status: { in: [...REVIEW_STATUSES] } },
+        orderBy: { firstSeenAt: "desc" },
+        take: 50,
+        include: { _count: { select: { signals: true } } },
+      }),
+      prisma.event.count({ where: { status: { in: [...REVIEW_STATUSES] } } }),
+      prisma.event.count({
+        where: {
+          status: { in: ["published", "auto_published"] },
+          publishedAt: { gte: startOfToday },
+        },
+      }),
+      prisma.source.count({ where: { enabled: true, failureCount: { gt: 0 } } }),
+      prisma.job.count({ where: { status: "pending" } }),
+      prisma.job.count({ where: { status: "failed" } }),
+      prisma.runtimeLease.findUnique({ where: { name: WORKER_LEASE_NAME } }),
+    ]);
+
+  // 租约未过期 = worker 在线;掉线或从未启动都要醒目提示。
+  const workerOnline = !!workerLease && workerLease.expiresAt.getTime() > Date.now();
 
   return (
     <div className="space-y-6">
@@ -45,11 +51,32 @@ export default async function AdminHomePage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <StatCard
+          label="Worker"
+          value={
+            workerOnline ? (
+              <span className="text-emerald-600 dark:text-emerald-400">在线</span>
+            ) : (
+              <span className="text-red-600 dark:text-red-400">离线</span>
+            )
+          }
+          hint={workerLease ? `心跳 ${relTime(workerLease.updatedAt)}` : "从未启动"}
+        />
         <StatCard label="待审" value={reviewCount} />
         <StatCard label="今日公开" value={todayPublic} />
         <StatCard label="失败源" value={failingSources} />
         <StatCard label="排队任务" value={pendingJobs} />
+        <StatCard
+          label="失败任务"
+          value={
+            failedJobs > 0 ? (
+              <span className="text-red-600 dark:text-red-400">{failedJobs}</span>
+            ) : (
+              failedJobs
+            )
+          }
+        />
       </div>
 
       {queue.length === 0 ? (
@@ -97,11 +124,20 @@ export default async function AdminHomePage() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint?: string;
+}) {
   return (
     <div className="rounded-lg border bg-card p-4">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="mt-1 font-display text-2xl font-bold tabular-nums">{value}</div>
+      {hint && <div className="mt-0.5 text-[11px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
