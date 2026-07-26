@@ -3,6 +3,7 @@ import { EventCard } from "@/components/event-card";
 import { BoardTabs } from "@/components/board-tabs";
 import { RightRail } from "@/components/right-rail";
 import { getPublicEventStatuses } from "@/lib/public-status";
+import { sanitizeSearchQuery } from "@/lib/search";
 import { startOfToday } from "@/lib/today";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +41,7 @@ export default async function Home({
   const query = await searchParams;
   const sort = query.sort === "hot" ? "hot" : "new";
   const board = query.board;
-  const q = query.q?.trim() || undefined;
+  const q = sanitizeSearchQuery(query.q ?? "") || undefined;
   const page = Math.max(1, Number(query.page) || 1);
   const mediumWhere = board ? { medium: board } : {};
   const searchWhere = q
