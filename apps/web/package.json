@@ -9,28 +9,28 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@aniradar/config": "workspace:*",
     "@aniradar/db": "workspace:*",
     "@aniradar/shared": "workspace:*",
-    "@aniradar/config": "workspace:*",
-    "next": "^15.5.20",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0",
-    "next-themes": "^0.3.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
-    "tailwind-merge": "^2.5.0",
-    "lucide-react": "^0.445.0",
     "date-fns": "^3.6.0",
-    "dotenv": "^16.4.0"
+    "dotenv": "^16.4.0",
+    "lucide-react": "^1.26.0",
+    "next": "^15.5.20",
+    "next-themes": "^0.4.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwind-merge": "^2.5.0"
   },
   "devDependencies": {
-    "typescript": "^5.6.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
     "@types/node": "^22.0.0",
-    "tailwindcss": "^3.4.0",
-    "postcss": "^8.4.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.0",
-    "tailwindcss-animate": "^1.0.7"
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.6.0"
   }
 }
