@@ -24,10 +24,7 @@ export default function Loading() {
           <div className="mb-4 h-8 w-40 rounded-lg bg-muted" />
           <div className="anime-card divide-y divide-border px-5">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 py-5"
-              >
+              <div key={i} className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 py-5">
                 <div className="space-y-3">
                   <div className="h-3 w-40 rounded bg-muted" />
                   <div className="h-5 w-3/4 rounded bg-muted" />

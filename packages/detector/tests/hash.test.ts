@@ -12,7 +12,10 @@ describe("normalizeUrl", () => {
 
 describe("computeSignalHash", () => {
   it("同源同 url 同 title 稳定且去查询追踪后一致", () => {
-    const a = computeSignalHash("s1", { url: "https://ex.com/a?utm_source=x", title: " アニメ化 " });
+    const a = computeSignalHash("s1", {
+      url: "https://ex.com/a?utm_source=x",
+      title: " アニメ化 ",
+    });
     const b = computeSignalHash("s1", { url: "https://ex.com/a", title: "アニメ化" });
     expect(a).toBe(b);
   });

@@ -11,7 +11,10 @@ const MERGE_WINDOW_MS = 72 * 60 * 60 * 1000;
 
 type SignalWithSource = Signal & { source: Source };
 
-export async function applyAnalyzeResult(signal: SignalWithSource, result: AnalyzeResult): Promise<void> {
+export async function applyAnalyzeResult(
+  signal: SignalWithSource,
+  result: AnalyzeResult,
+): Promise<void> {
   if (!result.isAnimeNews) {
     await prisma.signal.updateMany({
       where: { id: signal.id, status: "raw" },
@@ -41,7 +44,9 @@ export async function applyAnalyzeResult(signal: SignalWithSource, result: Analy
   const incomingWorkKey = workKeyFromFacts(result.facts);
   const baseWhere = {
     firstSeenAt: { gte: since },
-    status: { notIn: ["ignored", "retracted", "merged"] as Array<"ignored" | "retracted" | "merged"> },
+    status: {
+      notIn: ["ignored", "retracted", "merged"] as Array<"ignored" | "retracted" | "merged">,
+    },
   };
   const candidates = incomingWorkKey
     ? await prisma.event.findMany({
@@ -83,7 +88,12 @@ export async function applyAnalyzeResult(signal: SignalWithSource, result: Analy
     await prisma.$transaction(async (tx) => {
       const claimed = await tx.signal.updateMany({
         where: { id: signal.id, status: "raw" },
-        data: { status: "classified", eventId: target.id, titleZh: result.titleZh, aiSource: result.source },
+        data: {
+          status: "classified",
+          eventId: target.id,
+          titleZh: result.titleZh,
+          aiSource: result.source,
+        },
       });
       if (claimed.count !== 1) return;
       await tx.event.update({
@@ -97,7 +107,8 @@ export async function applyAnalyzeResult(signal: SignalWithSource, result: Analy
           medium: target.medium ?? result.medium,
           facts: mergedFacts as object,
           workKey: workKeyFromFacts(mergedFacts) ?? target.workKey,
-          publishedAt: target.publishedAt && target.publishedAt < sigPub ? target.publishedAt : sigPub,
+          publishedAt:
+            target.publishedAt && target.publishedAt < sigPub ? target.publishedAt : sigPub,
           ...(canUpgrade ? { status: built.status } : {}),
           ...(upgradeCategory ? { category: result.category } : {}),
         },

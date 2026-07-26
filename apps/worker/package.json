@@ -17,5 +17,7 @@
     "@aniradar/detector": "workspace:*",
     "@aniradar/ai": "workspace:*"
   },
-  "devDependencies": { "tsx": "^4.19.0" }
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
 }

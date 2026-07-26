@@ -26,7 +26,10 @@ export function middleware(req: NextRequest) {
 
   // Basic Auth 会被浏览器自动附带；对变更型后台 API 拒绝跨站请求，避免 CSRF。
   // 不信任客户端可控的 X-Forwarded-Host；优先 PUBLIC_ORIGIN / 配置的 Host。
-  if (req.nextUrl.pathname.startsWith("/api/admin/") && !["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+  if (
+    req.nextUrl.pathname.startsWith("/api/admin/") &&
+    !["GET", "HEAD", "OPTIONS"].includes(req.method)
+  ) {
     const site = req.headers.get("sec-fetch-site");
     if (site === "cross-site") {
       return new NextResponse("拒绝跨站后台请求。", { status: 403 });

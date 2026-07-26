@@ -9,7 +9,10 @@ export interface AiConfig {
 export function getAiConfig(): AiConfig | null {
   const apiKey = process.env.AI_API_KEY?.trim();
   if (!apiKey) return null;
-  const baseUrl = (process.env.AI_BASE_URL?.trim() || "https://api.deepseek.com").replace(/\/+$/, "");
+  const baseUrl = (process.env.AI_BASE_URL?.trim() || "https://api.deepseek.com").replace(
+    /\/+$/,
+    "",
+  );
   const model = process.env.AI_MODEL?.trim() || "deepseek-chat";
   return { apiKey, baseUrl, model };
 }

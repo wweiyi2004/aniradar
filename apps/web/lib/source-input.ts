@@ -31,14 +31,20 @@ export type ParsedSourcePatch = {
   selectorConfig?: unknown | null;
 };
 
-function asEnum<T extends string>(value: unknown, allowed: readonly T[], field: string): T | { error: string } {
+function asEnum<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+  field: string,
+): T | { error: string } {
   if (typeof value !== "string" || !(allowed as readonly string[]).includes(value)) {
     return { error: `${field} 无效，允许: ${allowed.join(", ")}` };
   }
   return value as T;
 }
 
-function parseSelectorConfig(raw: unknown): { ok: true; value: unknown } | { ok: false; error: string } {
+function parseSelectorConfig(
+  raw: unknown,
+): { ok: true; value: unknown } | { ok: false; error: string } {
   if (raw === undefined || raw === null || raw === "") return { ok: true, value: undefined };
   if (typeof raw === "object" && !Array.isArray(raw)) return { ok: true, value: raw };
   if (typeof raw === "string") {

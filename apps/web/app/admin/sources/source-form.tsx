@@ -53,7 +53,10 @@ export function SourceForm() {
             </option>
           ))}
         </Select>
-        <Select value={f.fetchStrategy} onChange={(e) => setF({ ...f, fetchStrategy: e.target.value })}>
+        <Select
+          value={f.fetchStrategy}
+          onChange={(e) => setF({ ...f, fetchStrategy: e.target.value })}
+        >
           {FETCH_STRATEGIES.map((t) => (
             <option key={t} value={t}>
               {t}

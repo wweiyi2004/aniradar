@@ -34,7 +34,9 @@ async function main() {
     else primaries.push(ev);
   }
 
-  console.log(`events=${events.length} primaries=${primaries.length} merges=${merges.length}  APPLY=${APPLY}`);
+  console.log(
+    `events=${events.length} primaries=${primaries.length} merges=${merges.length}  APPLY=${APPLY}`,
+  );
   for (const { from, into } of merges) {
     console.log(
       `  [${from.category}] "${from.titleZh ?? from.title}"\n      -> [${into.category}] "${into.titleZh ?? into.title}"`,
@@ -68,7 +70,9 @@ async function main() {
           videoUrl: cur.videoUrl ?? from.videoUrl,
           officialConfirmed: cur.officialConfirmed || from.officialConfirmed,
           // 弱标签 other 被合并进更具体分类的事件时升级分类。
-          ...(cur.category === "other" && from.category !== "other" ? { category: from.category } : {}),
+          ...(cur.category === "other" && from.category !== "other"
+            ? { category: from.category }
+            : {}),
         },
       });
       await tx.event.update({ where: { id: from.id }, data: { status: "merged" } });

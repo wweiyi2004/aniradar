@@ -56,45 +56,41 @@ export default async function Home({
   // 信息流永远是完整的时间线（最新在前），热门事件不从流中排除；
   // hero 只是“聚光灯”，与流中条目允许重复（杂志式做法）。
   // publishedAt 可空：nulls last，避免缺发布时间的事件被 Postgres DESC 顶到最前。
-  const [mainEvents, totalMain, hotEvents, todayCount, sourceAgg] =
-    await Promise.all([
-      prisma.event.findMany({
-        where: { status: { in: visible }, ...mediumWhere, ...searchWhere },
-        orderBy:
-          sort === "hot"
-            ? [{ heatScore: "desc" as const }, { publishedAt: "desc" as const }]
-            : [
-                { publishedAt: "desc" as const },
-                { firstSeenAt: "desc" as const },
-              ],
-        skip: (page - 1) * PAGE_SIZE,
-        take: PAGE_SIZE,
-        select: SELECT,
-      }),
-      prisma.event.count({
-        where: { status: { in: visible }, ...mediumWhere, ...searchWhere },
-      }),
-      // 近 7 天热门：一次查询同时供 hero（前 5 条）与右栏热度榜（6 条）。
-      prisma.event.findMany({
-        where: {
-          status: { in: visible },
-          heatScore: { gt: 1 },
-          publishedAt: { gte: hotPublishedSince },
-          ...mediumWhere,
-        },
-        orderBy: [{ heatScore: "desc" }, { publishedAt: "desc" }],
-        take: 6,
-        select: SELECT,
-      }),
-      prisma.event.count({
-        where: { status: { in: visible }, publishedAt: { gte: todayStart } },
-      }),
-      prisma.source.aggregate({
-        where: { enabled: true },
-        _count: true,
-        _max: { lastSuccessAt: true },
-      }),
-    ]);
+  const [mainEvents, totalMain, hotEvents, todayCount, sourceAgg] = await Promise.all([
+    prisma.event.findMany({
+      where: { status: { in: visible }, ...mediumWhere, ...searchWhere },
+      orderBy:
+        sort === "hot"
+          ? [{ heatScore: "desc" as const }, { publishedAt: "desc" as const }]
+          : [{ publishedAt: "desc" as const }, { firstSeenAt: "desc" as const }],
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      select: SELECT,
+    }),
+    prisma.event.count({
+      where: { status: { in: visible }, ...mediumWhere, ...searchWhere },
+    }),
+    // 近 7 天热门：一次查询同时供 hero（前 5 条）与右栏热度榜（6 条）。
+    prisma.event.findMany({
+      where: {
+        status: { in: visible },
+        heatScore: { gt: 1 },
+        publishedAt: { gte: hotPublishedSince },
+        ...mediumWhere,
+      },
+      orderBy: [{ heatScore: "desc" }, { publishedAt: "desc" }],
+      take: 6,
+      select: SELECT,
+    }),
+    prisma.event.count({
+      where: { status: { in: visible }, publishedAt: { gte: todayStart } },
+    }),
+    prisma.source.aggregate({
+      where: { enabled: true },
+      _count: true,
+      _max: { lastSuccessAt: true },
+    }),
+  ]);
 
   const heatTop = hotEvents.map((e) => ({
     id: e.id,
@@ -144,12 +140,8 @@ export default async function Home({
         <section aria-label="热门聚合" className="space-y-4">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                Spotlight
-              </p>
-              <h1 className="mt-1 font-display text-2xl font-bold">
-                次元聚光灯
-              </h1>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Spotlight</p>
+              <h1 className="mt-1 font-display text-2xl font-bold">次元聚光灯</h1>
             </div>
             <span className="hidden items-center gap-2 text-xs font-medium text-muted-foreground sm:inline-flex">
               <span className="signal-dot h-2 w-2 rounded-full bg-emerald-500" />
@@ -166,9 +158,7 @@ export default async function Home({
               </div>
             </div>
           )}
-          {hotEvents.length === 1 && (
-            <EventCard ev={hotEvents[0]} variant="hero" />
-          )}
+          {hotEvents.length === 1 && <EventCard ev={hotEvents[0]} variant="hero" />}
         </section>
       )}
 
@@ -183,13 +173,8 @@ export default async function Home({
                 {q ? "匹配情报" : "实时情报流"}
               </h2>
               <p className="mt-1.5 text-sm text-muted-foreground">
-                {q
-                  ? "匹配标题/译文"
-                  : sort === "hot"
-                    ? "按热度排序"
-                    : "按发布时间排序"}{" "}
-                · 共 {totalMain} 条
-                {totalPages > 1 ? ` · 第 ${page}/${totalPages} 页` : ""}
+                {q ? "匹配标题/译文" : sort === "hot" ? "按热度排序" : "按发布时间排序"} · 共{" "}
+                {totalMain} 条{totalPages > 1 ? ` · 第 ${page}/${totalPages} 页` : ""}
               </p>
             </div>
             {!q && (
@@ -219,9 +204,7 @@ export default async function Home({
           </div>
           {mainEvents.length === 0 && (
             <div className="anime-card mt-4 px-6 py-14 text-center">
-              <p className="font-display text-lg font-bold">
-                暂时没有捕捉到信号
-              </p>
+              <p className="font-display text-lg font-bold">暂时没有捕捉到信号</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 {q ? "换个关键词再试试看吧。" : "雷达仍在扫描这个板块。"}
               </p>

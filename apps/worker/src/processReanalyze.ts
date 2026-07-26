@@ -39,7 +39,10 @@ export async function processReanalyze(data: ReanalyzeJobData): Promise<void> {
     data: { titleZh: result.titleZh, aiSource: "ai" },
   });
   if (signal.eventId) {
-    const ev = await prisma.event.findUnique({ where: { id: signal.eventId }, select: { medium: true, facts: true } });
+    const ev = await prisma.event.findUnique({
+      where: { id: signal.eventId },
+      select: { medium: true, facts: true },
+    });
     const facts = mergeFacts(ev?.facts, result.facts);
     await prisma.event.update({
       where: { id: signal.eventId },

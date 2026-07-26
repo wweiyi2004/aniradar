@@ -6,16 +6,28 @@ const RULES: { keywords: string[]; category: EventCategory; confidence: number }
   { keywords: ["放送延期", "延期"], category: "delay_announced", confidence: 0.92 },
   { keywords: ["第2期", "第二期", "続編", "2期"], category: "sequel_announced", confidence: 0.92 },
   { keywords: ["劇場版", "映画化"], category: "movie_announced", confidence: 0.9 },
-  { keywords: ["アニメ化", "制作決定", "新作アニメ"], category: "anime_adaptation", confidence: 0.93 },
+  {
+    keywords: ["アニメ化", "制作決定", "新作アニメ"],
+    category: "anime_adaptation",
+    confidence: 0.93,
+  },
   {
     keywords: ["本PV", "ティザーPV", "ティザー", "特報", "予告", "PV公開", "PV"],
     category: "pv_released",
     confidence: 0.88,
   },
-  { keywords: ["キービジュアル", "ビジュアル公開", "ビジュアル"], category: "key_visual_released", confidence: 0.85 },
+  {
+    keywords: ["キービジュアル", "ビジュアル公開", "ビジュアル"],
+    category: "key_visual_released",
+    confidence: 0.85,
+  },
   { keywords: ["キャスト解禁", "キャスト"], category: "cast_announced", confidence: 0.85 },
   { keywords: ["スタッフ解禁", "スタッフ"], category: "staff_announced", confidence: 0.82 },
-  { keywords: ["放送開始", "放送決定", "配信決定", "放送"], category: "broadcast_date_announced", confidence: 0.85 },
+  {
+    keywords: ["放送開始", "放送決定", "配信決定", "放送"],
+    category: "broadcast_date_announced",
+    confidence: 0.85,
+  },
   { keywords: ["主題歌", "OP", "ED"], category: "theme_song_announced", confidence: 0.8 },
 ];
 

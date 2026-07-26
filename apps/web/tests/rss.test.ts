@@ -9,9 +9,7 @@ describe("escapeXml", () => {
   });
 
   it("strips control characters illegal in XML 1.0", () => {
-    const dirty = ["a", "b", "c", "d", "e"].join(
-      String.fromCharCode(0),
-    );
+    const dirty = ["a", "b", "c", "d", "e"].join(String.fromCharCode(0));
     expect(escapeXml(dirty)).toBe("abcde");
     expect(escapeXml(`x${String.fromCharCode(8, 11, 31)}y`)).toBe("xy");
     // 合法空白保留
@@ -51,20 +49,14 @@ describe("buildRssXml", () => {
       `<atom:link href="https://example.com/feed.xml" rel="self" type="application/rss+xml"/>`,
     );
     expect(xml).toContain("<language>zh-cn</language>");
-    expect(xml).toContain(
-      "<lastBuildDate>Sun, 26 Jul 2026 00:00:00 GMT</lastBuildDate>",
-    );
+    expect(xml).toContain("<lastBuildDate>Sun, 26 Jul 2026 00:00:00 GMT</lastBuildDate>");
   });
 
   it("escapes item content and renders permalink guid + RFC822 pubDate", () => {
     const xml = buildRssXml(channel);
     expect(xml).toContain("<title>《测试&amp;作品》动画化</title>");
-    expect(xml).toContain(
-      "<description>摘要&lt;b&gt;富文本&lt;/b&gt;</description>",
-    );
-    expect(xml).toContain(
-      `<guid isPermaLink="true">https://example.com/events/e1</guid>`,
-    );
+    expect(xml).toContain("<description>摘要&lt;b&gt;富文本&lt;/b&gt;</description>");
+    expect(xml).toContain(`<guid isPermaLink="true">https://example.com/events/e1</guid>`);
     expect(xml).toContain("<pubDate>Sat, 25 Jul 2026 12:34:56 GMT</pubDate>");
     expect(xml).toContain("<category>动画化</category>");
   });

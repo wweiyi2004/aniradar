@@ -66,7 +66,11 @@ export async function enqueueJob(client: DbClient, spec: EnqueueJobSpec): Promis
   }
 }
 
-export async function claimJob(type: JobType, workerId: string, now = new Date()): Promise<Job | null> {
+export async function claimJob(
+  type: JobType,
+  workerId: string,
+  now = new Date(),
+): Promise<Job | null> {
   const { prisma } = await import("./index");
   return prisma.$transaction(async (tx) => {
     const candidate = await tx.job.findFirst({
@@ -85,11 +89,17 @@ export async function claimJob(type: JobType, workerId: string, now = new Date()
 
 export async function completeJob(jobId: string, workerId: string): Promise<boolean> {
   const { prisma } = await import("./index");
-  const deleted = await prisma.job.deleteMany({ where: { id: jobId, status: "running", lockedBy: workerId } });
+  const deleted = await prisma.job.deleteMany({
+    where: { id: jobId, status: "running", lockedBy: workerId },
+  });
   return deleted.count === 1;
 }
 
-export async function heartbeatJob(jobId: string, workerId: string, now = new Date()): Promise<boolean> {
+export async function heartbeatJob(
+  jobId: string,
+  workerId: string,
+  now = new Date(),
+): Promise<boolean> {
   const { prisma } = await import("./index");
   const result = await prisma.job.updateMany({
     where: { id: jobId, status: "running", lockedBy: workerId },
@@ -137,15 +147,31 @@ export async function recoverStaleJobs(lockTimeoutMs: number, now = new Date()):
     const result = await prisma.job.updateMany({
       where: { id: job.id, status: "running", lockedAt: job.lockedAt },
       data: finalAttempt
-        ? { status: "failed", lockedAt: null, lockedBy: null, lastError: "worker lease expired after final attempt" }
-        : { status: "pending", runAt: now, lockedAt: null, lockedBy: null, lastError: "recovered stale worker lock" },
+        ? {
+            status: "failed",
+            lockedAt: null,
+            lockedBy: null,
+            lastError: "worker lease expired after final attempt",
+          }
+        : {
+            status: "pending",
+            runAt: now,
+            lockedAt: null,
+            lockedBy: null,
+            lastError: "recovered stale worker lock",
+          },
     });
     recovered += result.count;
   }
   return recovered;
 }
 
-export async function acquireLease(name: string, ownerId: string, ttlMs: number, now = new Date()): Promise<boolean> {
+export async function acquireLease(
+  name: string,
+  ownerId: string,
+  ttlMs: number,
+  now = new Date(),
+): Promise<boolean> {
   const { prisma } = await import("./index");
   const expiresAt = new Date(now.getTime() + ttlMs);
   return prisma.$transaction(async (tx) => {

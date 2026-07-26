@@ -49,7 +49,8 @@ export default async function AdminEventDetail({ params }: { params: Promise<{ i
         <MediumBadge medium={ev.medium} />
         <StatusBadge status={ev.status} />
         <span className="font-mono text-xs text-muted-foreground">
-          置信 {(ev.confidence * 100).toFixed(0)}% · 热度 {ev.heatScore} · {relTime(ev.publishedAt ?? ev.firstSeenAt)}
+          置信 {(ev.confidence * 100).toFixed(0)}% · 热度 {ev.heatScore} ·{" "}
+          {relTime(ev.publishedAt ?? ev.firstSeenAt)}
         </span>
       </div>
 
@@ -62,7 +63,9 @@ export default async function AdminEventDetail({ params }: { params: Promise<{ i
 
       {ev.bodyZh && (
         <section className="space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Body</h2>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Body
+          </h2>
           <div className="space-y-3 text-sm leading-7">
             {ev.bodyZh.split(/\n+/).map((p, i) => (p.trim() ? <p key={i}>{p.trim()}</p> : null))}
           </div>
@@ -79,7 +82,12 @@ export default async function AdminEventDetail({ params }: { params: Promise<{ i
               <div className="text-xs text-muted-foreground">
                 {s.source.name} · {s.status} · {relTime(s.firstSeenAt)}
               </div>
-              <a href={s.url} target="_blank" rel="noreferrer" className="font-medium text-primary hover:underline">
+              <a
+                href={s.url}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-primary hover:underline"
+              >
                 {s.titleZh || s.title}
               </a>
             </li>

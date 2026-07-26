@@ -20,7 +20,11 @@ const YT_LINK_RE = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{6,})/;
 
 // 文章内嵌的 YouTube 视频（多为 PV/预告）。iframe 嵌入最可靠；正文内指向
 // YouTube 的链接次之（限定在文章容器内，避免命中页脚的频道链接）。
-function extractYouTube($: cheerio.CheerioAPI, container: cheerio.Cheerio<never>, isArticleNode: boolean): string | undefined {
+function extractYouTube(
+  $: cheerio.CheerioAPI,
+  container: cheerio.Cheerio<never>,
+  isArticleNode: boolean,
+): string | undefined {
   let id: string | undefined;
   container.find("iframe[src]").each((_, el) => {
     if (id) return;

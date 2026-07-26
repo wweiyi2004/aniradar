@@ -19,7 +19,11 @@ describe("buildEventFromSignal · 状态判定", () => {
     expect(ev.officialConfirmed).toBe(false);
   });
   it("低置信 → needs_review（不公开）", () => {
-    const ev = buildEventFromSignal({ ...base, confidence: MIN_PUBLIC_CONFIDENCE - 0.01, sourceType: "media" });
+    const ev = buildEventFromSignal({
+      ...base,
+      confidence: MIN_PUBLIC_CONFIDENCE - 0.01,
+      sourceType: "media",
+    });
     expect(ev.status).toBe("needs_review");
   });
   it("官方源低置信也进 needs_review", () => {

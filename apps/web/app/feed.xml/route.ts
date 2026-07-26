@@ -15,9 +15,7 @@ export async function GET(request: NextRequest) {
   const boardParam = request.nextUrl.searchParams.get("board");
   // 非法 board 忽略(返回全量),与首页行为一致。
   const board =
-    boardParam && (MEDIUMS as readonly string[]).includes(boardParam)
-      ? boardParam
-      : undefined;
+    boardParam && (MEDIUMS as readonly string[]).includes(boardParam) ? boardParam : undefined;
 
   const events = await prisma.event.findMany({
     where: {
@@ -39,9 +37,7 @@ export async function GET(request: NextRequest) {
 
   const boardLabel = board ? MEDIUM_LABEL[board] : undefined;
   const xml = buildRssXml({
-    title: boardLabel
-      ? `AniRadar · 次元情报站 · ${boardLabel}`
-      : "AniRadar · 次元情报站",
+    title: boardLabel ? `AniRadar · 次元情报站 · ${boardLabel}` : "AniRadar · 次元情报站",
     link: board ? `${origin}/?board=${board}` : origin,
     feedUrl: board ? `${origin}/feed.xml?board=${board}` : `${origin}/feed.xml`,
     description: "实时捕捉动画、漫画、游戏与轻小说的新情报。",

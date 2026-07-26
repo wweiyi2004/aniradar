@@ -49,16 +49,8 @@ body {
   min-height: 100vh;
   isolation: isolate;
   background-image:
-    radial-gradient(
-      circle at 8% 0%,
-      hsl(var(--primary) / 0.12),
-      transparent 26rem
-    ),
-    radial-gradient(
-      circle at 92% 4%,
-      hsl(var(--accent) / 0.1),
-      transparent 24rem
-    );
+    radial-gradient(circle at 8% 0%, hsl(var(--primary) / 0.12), transparent 26rem),
+    radial-gradient(circle at 92% 4%, hsl(var(--accent) / 0.1), transparent 24rem);
 }
 
 body::before {

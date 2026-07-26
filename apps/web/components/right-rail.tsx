@@ -67,17 +67,13 @@ export function RightRail({
                 <h2 className="font-display text-base font-bold">雷达运行中</h2>
                 <span className="signal-dot h-1.5 w-1.5 rounded-full bg-emerald-500" />
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                持续扫描次元新信号
-              </p>
+              <p className="text-[11px] text-muted-foreground">持续扫描次元新信号</p>
             </div>
           </div>
           <div className="space-y-2.5 text-sm">
             <div className="flex items-center justify-between rounded-xl bg-background/60 px-3 py-2">
               <span className="text-muted-foreground">今日新增</span>
-              <span className="font-mono font-semibold text-primary">
-                {todayCount} 条
-              </span>
+              <span className="font-mono font-semibold text-primary">{todayCount} 条</span>
             </div>
             <div className="flex items-center justify-between rounded-xl bg-background/60 px-3 py-2">
               <span className="text-muted-foreground">监测信源</span>

@@ -61,7 +61,9 @@ export function parseLooseDate(text: string | null | undefined): Date | undefine
   if (!t) return undefined;
 
   // 日文：2026年6月28日（可带 22:00）
-  const jp = t.match(/(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日(?:[^\d]*?(\d{1,2})[:：](\d{2}))?/);
+  const jp = t.match(
+    /(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日(?:[^\d]*?(\d{1,2})[:：](\d{2}))?/,
+  );
   if (jp) {
     const dt = makeJst(
       Number(jp[1]),

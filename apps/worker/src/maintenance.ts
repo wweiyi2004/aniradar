@@ -72,10 +72,7 @@ export async function decayHeatScores(factor = HEAT_DECAY_FACTOR): Promise<numbe
  * 每日至多一份;滚动保留 BACKUP_KEEP 份(0 = 禁用)。
  * 返回新备份文件路径;跳过(已备份/禁用)返回 null。
  */
-export async function backupDatabase(
-  now = new Date(),
-  targetDir?: string,
-): Promise<string | null> {
+export async function backupDatabase(now = new Date(), targetDir?: string): Promise<string | null> {
   const keep = env.backupKeep;
   if (keep <= 0) return null;
   // 主库文件绝对路径由 SQLite 自己给出,免去解析 DATABASE_URL 相对路径。

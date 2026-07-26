@@ -30,10 +30,7 @@ export async function reanalyzeTick(): Promise<void> {
     where: {
       aiSource: "mock",
       firstSeenAt: { gte: since },
-      OR: [
-        { status: "classified", eventId: { not: null } },
-        { status: "ignored" },
-      ],
+      OR: [{ status: "classified", eventId: { not: null } }, { status: "ignored" }],
     },
     orderBy: { firstSeenAt: "desc" },
     take: env.reanalyzeBatch,

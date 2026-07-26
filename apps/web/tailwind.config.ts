@@ -42,12 +42,7 @@ const config: Config = {
           '"Noto Sans CJK SC"',
           "sans-serif",
         ],
-        display: [
-          "var(--font-display)",
-          '"PingFang SC"',
-          '"Microsoft YaHei"',
-          "sans-serif",
-        ],
+        display: ["var(--font-display)", '"PingFang SC"', '"Microsoft YaHei"', "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       borderRadius: {

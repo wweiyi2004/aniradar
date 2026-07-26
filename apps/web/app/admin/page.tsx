@@ -44,7 +44,9 @@ export default async function AdminHomePage() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold">待审工作台</h1>
-          <p className="text-sm text-muted-foreground">优先处理 needs_review / draft_ai，一键发布或忽略。</p>
+          <p className="text-sm text-muted-foreground">
+            优先处理 needs_review / draft_ai，一键发布或忽略。
+          </p>
         </div>
         <Link href="/admin/events?status=all" className="text-sm text-primary hover:underline">
           全部事件 →
@@ -103,14 +105,18 @@ export default async function AdminHomePage() {
                     {e.titleZh || e.title}
                   </Link>
                   {e.summaryZh && (
-                    <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{e.summaryZh}</p>
+                    <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                      {e.summaryZh}
+                    </p>
                   )}
                 </TD>
                 <TD>
                   <StatusBadge status={e.status} />
                 </TD>
                 <TD className="font-mono text-xs">{(e.confidence * 100).toFixed(0)}%</TD>
-                <TD className="font-mono text-xs text-muted-foreground">{relTime(e.firstSeenAt)}</TD>
+                <TD className="font-mono text-xs text-muted-foreground">
+                  {relTime(e.firstSeenAt)}
+                </TD>
                 <TD>{e._count.signals}</TD>
                 <TD>
                   <EventActions id={e.id} />

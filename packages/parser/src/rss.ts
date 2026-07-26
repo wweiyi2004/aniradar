@@ -27,7 +27,9 @@ function pickImage(it: Record<string, unknown>, base?: string): string | undefin
     const u = resolveUrl(enclosure.url, base);
     if (u) return u;
   }
-  const mediaContent = it.mediaContent as Array<{ $?: { url?: string; medium?: string; type?: string } }> | undefined;
+  const mediaContent = it.mediaContent as
+    | Array<{ $?: { url?: string; medium?: string; type?: string } }>
+    | undefined;
   if (Array.isArray(mediaContent)) {
     for (const m of mediaContent) {
       const url = m?.$?.url;

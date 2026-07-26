@@ -11,9 +11,10 @@ const HEARTBEAT_MS = Math.max(5_000, Math.floor(env.jobLockTimeoutMs / 3));
 
 function payloadString(job: Job, field: string): string {
   const payload = job.payload;
-  const value = payload && typeof payload === "object" && !Array.isArray(payload)
-    ? (payload as Record<string, unknown>)[field]
-    : undefined;
+  const value =
+    payload && typeof payload === "object" && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)[field]
+      : undefined;
   if (typeof value !== "string" || !value) throw new Error(`invalid ${job.type} payload: ${field}`);
   return value;
 }
@@ -70,7 +71,11 @@ export function startJobRunners(workerId: string): { stop(): Promise<void> } {
               await wait();
             }
           }
-          console.error(`${type} job ${status}`, job.id, error instanceof Error ? error.message : error);
+          console.error(
+            `${type} job ${status}`,
+            job.id,
+            error instanceof Error ? error.message : error,
+          );
         } else {
           console.error(`${type} runner failed`, error);
           await wait();

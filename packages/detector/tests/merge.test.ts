@@ -73,7 +73,11 @@ describe("isSameEvent · facts.work 强键", () => {
     expect(isSameEvent(a, b)).toBe(true);
   });
   it("同 work、other ↔ 具体分类 → 合并（修复世界在舞蹈跨分类拆分）", () => {
-    const a = { title: "第1話放送を記念して祝賀イラスト公開", category: "other", work: "ワールド イズ ダンシング" };
+    const a = {
+      title: "第1話放送を記念して祝賀イラスト公開",
+      category: "other",
+      work: "ワールド イズ ダンシング",
+    };
     const b = { title: "OP映像が公開", category: "pv_released", work: "ワールド イズ ダンシング" };
     expect(isSameEvent(a, b)).toBe(true);
   });
@@ -99,7 +103,11 @@ describe("isSameEvent · facts.work 强键", () => {
   });
   it("周边类不走 work 强键：同作品两款不同周边 → 不合并", () => {
     const a = { title: "五条悟エコバッグ発売", category: "merch_release", work: "呪術廻戦" };
-    const b = { title: "乙骨vs虎杖アパレルグッズ登場", category: "merch_release", work: "呪術廻戦" };
+    const b = {
+      title: "乙骨vs虎杖アパレルグッズ登場",
+      category: "merch_release",
+      work: "呪術廻戦",
+    };
     expect(isSameEvent(a, b)).toBe(false);
   });
   it("活动类不走 work 强键：同作品两场不同活动 → 不合并", () => {

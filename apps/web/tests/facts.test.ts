@@ -4,7 +4,10 @@ import { buildFactRows } from "../lib/facts";
 describe("buildFactRows", () => {
   it("动画+放送日：底字段+专有字段叠加，空字段跳过", () => {
     const rows = buildFactRows("anime", "broadcast_date_announced", {
-      work: "鬼灭之刃", studio: "ufotable", airDate: "2024-04", broadcaster: "TOKYO MX",
+      work: "鬼灭之刃",
+      studio: "ufotable",
+      airDate: "2024-04",
+      broadcaster: "TOKYO MX",
       director: "", // 空，跳过
     });
     const labels = rows.map((r) => r.label);
@@ -17,10 +20,14 @@ describe("buildFactRows", () => {
 
   it("声优解禁：cast 列表渲染为 {sub,value}", () => {
     const rows = buildFactRows("anime", "cast_announced", {
-      work: "某作", cast: [{ role: "田中", name: "花泽香菜" }],
+      work: "某作",
+      cast: [{ role: "田中", name: "花泽香菜" }],
     });
     const castRow = rows.find((r) => r.label === "声优");
-    expect(castRow && "list" in castRow && castRow.list[0]).toEqual({ sub: "田中", value: "花泽香菜" });
+    expect(castRow && "list" in castRow && castRow.list[0]).toEqual({
+      sub: "田中",
+      value: "花泽香菜",
+    });
   });
 
   it("facts 全空 → 空数组", () => {

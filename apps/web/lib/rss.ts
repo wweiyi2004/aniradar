@@ -57,9 +57,7 @@ export function buildRssXml(channel: RssChannel): string {
         lines.push(`      <category>${escapeXml(item.category)}</category>`);
       }
       if (item.description) {
-        lines.push(
-          `      <description>${escapeXml(item.description)}</description>`,
-        );
+        lines.push(`      <description>${escapeXml(item.description)}</description>`);
       }
       lines.push("    </item>");
       return lines.join("\n");
@@ -76,9 +74,7 @@ export function buildRssXml(channel: RssChannel): string {
     head.push(`    <language>${escapeXml(channel.language)}</language>`);
   }
   if (channel.lastBuildDate) {
-    head.push(
-      `    <lastBuildDate>${channel.lastBuildDate.toUTCString()}</lastBuildDate>`,
-    );
+    head.push(`    <lastBuildDate>${channel.lastBuildDate.toUTCString()}</lastBuildDate>`);
   }
 
   return [

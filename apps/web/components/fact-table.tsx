@@ -1,6 +1,14 @@
 import { buildFactRows } from "@/lib/facts";
 
-export function FactTable({ medium, category, facts }: { medium: string | null; category: string; facts: unknown }) {
+export function FactTable({
+  medium,
+  category,
+  facts,
+}: {
+  medium: string | null;
+  category: string;
+  facts: unknown;
+}) {
   const rows = buildFactRows(medium, category, facts);
   if (rows.length === 0) return null;
   return (

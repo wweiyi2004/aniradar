@@ -17,11 +17,7 @@ export const dynamic = "force-dynamic";
 // 动态路由下，notFound() 的 HTTP 状态仍为 200（已知限制，实测 force-dynamic 与 auto 均如此）。
 // 用户体验正确，仅对爬虫的状态码语义有影响，影响轻微。
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const publicStatus = [...getPublicEventStatuses()];
   const ev = await prisma.event.findFirst({
@@ -48,14 +44,9 @@ export async function generateMetadata({
   };
 }
 
-const SECTION_HEAD =
-  "text-xs font-bold uppercase tracking-[0.18em] text-primary";
+const SECTION_HEAD = "text-xs font-bold uppercase tracking-[0.18em] text-primary";
 
-export default async function EventDetail({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function EventDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const publicStatus = [...getPublicEventStatuses()];
   const ev = await prisma.event.findFirst({
@@ -123,14 +114,11 @@ export default async function EventDetail({
             {ev.titleZh || ev.title}
           </h1>
           {ev.titleZh && ev.title !== ev.titleZh && (
-            <p className="text-sm leading-6 text-muted-foreground">
-              原标题：{ev.title}
-            </p>
+            <p className="text-sm leading-6 text-muted-foreground">原标题：{ev.title}</p>
           )}
 
           <p className="font-mono text-[11px] text-muted-foreground">
-            发布 {relTime(ev.publishedAt ?? ev.firstSeenAt)} ·{" "}
-            {ev.signals.length} 个来源 · 置信度{" "}
+            发布 {relTime(ev.publishedAt ?? ev.firstSeenAt)} · {ev.signals.length} 个来源 · 置信度{" "}
             {(ev.confidence * 100).toFixed(0)}% · 热度 {ev.heatScore}
           </p>
         </header>
@@ -156,20 +144,14 @@ export default async function EventDetail({
 
         <section className="anime-card space-y-4 p-5 sm:p-6">
           <h2 className={SECTION_HEAD}>情报速览</h2>
-          <FactTable
-            medium={ev.medium}
-            category={ev.category}
-            facts={ev.facts}
-          />
+          <FactTable medium={ev.medium} category={ev.category} facts={ev.facts} />
         </section>
 
         {ev.bodyZh && (
           <section className="space-y-4 px-1">
             <h2 className={SECTION_HEAD}>正文 · AI 整合译文</h2>
             <div className="space-y-4 text-[17px] leading-8">
-              {ev.bodyZh
-                .split(/\n+/)
-                .map((p, i) => (p.trim() ? <p key={i}>{p.trim()}</p> : null))}
+              {ev.bodyZh.split(/\n+/).map((p, i) => (p.trim() ? <p key={i}>{p.trim()}</p> : null))}
             </div>
           </section>
         )}
@@ -184,9 +166,7 @@ export default async function EventDetail({
               <li key={s.id} className="relative ml-6">
                 <span className="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
                 <div className="text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">
-                    {s.source.name}
-                  </span>
+                  <span className="font-semibold text-foreground">{s.source.name}</span>
                   {" · "}
                   <span className="font-mono">
                     {s.publishedAt
@@ -204,9 +184,7 @@ export default async function EventDetail({
                   {s.titleZh || s.title}
                 </a>
                 {s.titleZh && s.titleZh !== s.title && (
-                  <div className="text-xs leading-5 text-muted-foreground">
-                    {s.title}
-                  </div>
+                  <div className="text-xs leading-5 text-muted-foreground">{s.title}</div>
                 )}
                 {(s.rawText || s.summary) && (
                   <p className="mt-2 line-clamp-4 max-w-3xl text-sm leading-6 text-muted-foreground">
@@ -224,10 +202,7 @@ export default async function EventDetail({
             <ul className="space-y-3">
               {related.map((r) => (
                 <li key={r.id}>
-                  <Link
-                    href={`/events/${r.id}`}
-                    className="group flex items-baseline gap-3"
-                  >
+                  <Link href={`/events/${r.id}`} className="group flex items-baseline gap-3">
                     <CategoryBadge category={r.category} />
                     <span className="min-w-0 flex-1 truncate font-medium group-hover:text-primary">
                       {r.titleZh || r.title}
@@ -257,9 +232,7 @@ export default async function EventDetail({
               </div>
               <div className="flex justify-between gap-3 rounded-xl bg-background/60 px-3 py-2">
                 <span className="text-muted-foreground">置信度</span>
-                <span className="font-mono">
-                  {(ev.confidence * 100).toFixed(0)}%
-                </span>
+                <span className="font-mono">{(ev.confidence * 100).toFixed(0)}%</span>
               </div>
               <div className="flex justify-between gap-3 rounded-xl bg-background/60 px-3 py-2">
                 <span className="text-muted-foreground">来源</span>
@@ -267,9 +240,7 @@ export default async function EventDetail({
               </div>
               <div className="border-t pt-2.5 font-mono text-xs leading-5 text-muted-foreground">
                 {ev.publishedAt && (
-                  <div>
-                    发布 {new Date(ev.publishedAt).toLocaleString("zh-CN")}
-                  </div>
+                  <div>发布 {new Date(ev.publishedAt).toLocaleString("zh-CN")}</div>
                 )}
                 首次发现 {new Date(ev.firstSeenAt).toLocaleString("zh-CN")}
               </div>

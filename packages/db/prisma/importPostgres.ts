@@ -41,7 +41,10 @@ async function readBatches<T extends QueryResultRow>(
   let offset = 0;
   let total = 0;
   while (true) {
-    const result = await source.query<T>(`SELECT * FROM "${table}" ORDER BY "createdAt", "id" LIMIT $1 OFFSET $2`, [BATCH, offset]);
+    const result = await source.query<T>(
+      `SELECT * FROM "${table}" ORDER BY "createdAt", "id" LIMIT $1 OFFSET $2`,
+      [BATCH, offset],
+    );
     if (result.rows.length === 0) break;
     await consume(result.rows);
     total += result.rows.length;
@@ -97,14 +100,25 @@ async function main() {
     counts.Event = await readBatches<Record<string, unknown>>(source, "Event", async (rows) => {
       await prisma.event.createMany({ data: rows.map(prepareEventRow) });
     });
-    counts.Signal = await readBatches<Prisma.SignalCreateManyInput>(source, "Signal", async (rows) => {
-      await prisma.signal.createMany({ data: rows });
-    });
-    counts.FetchLog = await readBatches<Prisma.FetchLogCreateManyInput>(source, "FetchLog", async (rows) => {
-      await prisma.fetchLog.createMany({ data: rows });
-    });
+    counts.Signal = await readBatches<Prisma.SignalCreateManyInput>(
+      source,
+      "Signal",
+      async (rows) => {
+        await prisma.signal.createMany({ data: rows });
+      },
+    );
+    counts.FetchLog = await readBatches<Prisma.FetchLogCreateManyInput>(
+      source,
+      "FetchLog",
+      async (rows) => {
+        await prisma.fetchLog.createMany({ data: rows });
+      },
+    );
 
-    const rawSignals = await prisma.signal.findMany({ where: { status: "raw" }, select: { id: true } });
+    const rawSignals = await prisma.signal.findMany({
+      where: { status: "raw" },
+      select: { id: true },
+    });
     for (const signal of rawSignals) {
       await enqueueJob(prisma, {
         type: "classify",
@@ -118,7 +132,10 @@ async function main() {
         status: { notIn: ["ignored", "retracted", "merged"] },
         signals: { some: { status: "classified" } },
       },
-      select: { id: true, signals: { where: { status: "classified" }, take: 1, select: { id: true } } },
+      select: {
+        id: true,
+        signals: { where: { status: "classified" }, take: 1, select: { id: true } },
+      },
     });
     for (const event of uncomposed) {
       const signalId = event.signals[0]?.id;
@@ -138,7 +155,9 @@ async function main() {
     };
     for (const name of Object.keys(counts)) {
       if (counts[name] !== targetCounts[name as keyof typeof targetCounts]) {
-        throw new Error(`${name} 计数不一致: source=${counts[name]} target=${targetCounts[name as keyof typeof targetCounts]}`);
+        throw new Error(
+          `${name} 计数不一致: source=${counts[name]} target=${targetCounts[name as keyof typeof targetCounts]}`,
+        );
       }
     }
     const orphanRows = await prisma.$queryRawUnsafe<{ count: bigint }[]>(

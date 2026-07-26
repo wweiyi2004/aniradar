@@ -32,7 +32,10 @@ describe("classify", () => {
 
 describe("classify · media/press 源要求动漫语境词", () => {
   it("media 源纯 J-pop 新曲 MV → 非情报（无动漫语境词）", () => {
-    const r = classify({ title: "新曲「Blue Shining Star」ミュージックビデオ公開", sourceType: "media" });
+    const r = classify({
+      title: "新曲「Blue Shining Star」ミュージックビデオ公開",
+      sourceType: "media",
+    });
     expect(r.isAnimeNews).toBe(false);
   });
   it("media 源真人电影放送 → 非情报", () => {
@@ -40,7 +43,10 @@ describe("classify · media/press 源要求动漫语境词", () => {
     expect(r.isAnimeNews).toBe(false);
   });
   it("media 源动画主题歌（含アニメ语境词）→ 情报", () => {
-    const r = classify({ title: "TVアニメ「落第賢者」OP主題歌が配信リリース", sourceType: "media" });
+    const r = classify({
+      title: "TVアニメ「落第賢者」OP主題歌が配信リリース",
+      sourceType: "media",
+    });
     expect(r.isAnimeNews).toBe(true);
     expect(r.category).toBe("theme_song_announced");
   });

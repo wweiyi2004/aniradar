@@ -15,7 +15,9 @@ describe("shouldReanalyze", () => {
     expect(shouldReanalyze({ aiSource: "mock", eventId: null, status: "raw" })).toBe(false);
   });
   it("prefilter ignored → 不重分析", () => {
-    expect(shouldReanalyze({ aiSource: "prefilter", eventId: null, status: "ignored" })).toBe(false);
+    expect(shouldReanalyze({ aiSource: "prefilter", eventId: null, status: "ignored" })).toBe(
+      false,
+    );
   });
   it("aiSource 为空 → 不重分析", () => {
     expect(shouldReanalyze({ aiSource: null, eventId: "e1" })).toBe(false);

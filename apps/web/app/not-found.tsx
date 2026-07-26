@@ -6,9 +6,7 @@ export default function NotFound() {
     <div className="anime-card relative mx-auto flex min-h-[55vh] max-w-3xl flex-col items-center justify-center gap-4 overflow-hidden px-6 text-center">
       <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
       <div className="absolute -bottom-20 -right-20 h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
-      <p className="font-display text-8xl font-bold leading-none text-primary/15">
-        404
-      </p>
+      <p className="font-display text-8xl font-bold leading-none text-primary/15">404</p>
       <span className="relative flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-accent text-white shadow-lg">
         <Radar className="h-8 w-8" />
         <Sparkles className="absolute right-2 top-2 h-3 w-3" />

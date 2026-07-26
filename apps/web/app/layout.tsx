@@ -52,11 +52,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="zh"
@@ -72,9 +68,7 @@ export default function RootLayout({
           <footer className="mt-14 border-t border-border/60 bg-card/30">
             <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-7 text-xs text-muted-foreground sm:px-6 lg:px-8">
               <p>
-                <span className="font-display font-bold text-foreground">
-                  ANIRADAR
-                </span>
+                <span className="font-display font-bold text-foreground">ANIRADAR</span>
                 <span className="mx-2 text-primary">✦</span>
                 让每一个次元新信号都被看见。
               </p>

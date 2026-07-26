@@ -1,4 +1,10 @@
-import { EVENT_CATEGORIES, type EventCategory, type Medium, MEDIUMS, mediumFromCategory } from "@aniradar/shared";
+import {
+  EVENT_CATEGORIES,
+  type EventCategory,
+  type Medium,
+  MEDIUMS,
+  mediumFromCategory,
+} from "@aniradar/shared";
 import { classify } from "./classify";
 import { summarize } from "./summarize";
 import { getAiConfig, chatJson } from "./provider";
@@ -109,10 +115,12 @@ export async function analyze(input: AnalyzeInput): Promise<AnalyzeResult> {
     const medium: Medium = (MEDIUMS as readonly string[]).includes(rawMedium)
       ? (rawMedium as Medium)
       : "other";
-    const leadZh = String(parsed.leadZh ?? parsed.summaryZh ?? "").trim() || (input.summary ?? "").trim();
-    const facts = (parsed.facts && typeof parsed.facts === "object" && !Array.isArray(parsed.facts))
-      ? (parsed.facts as Record<string, unknown>)
-      : {};
+    const leadZh =
+      String(parsed.leadZh ?? parsed.summaryZh ?? "").trim() || (input.summary ?? "").trim();
+    const facts =
+      parsed.facts && typeof parsed.facts === "object" && !Array.isArray(parsed.facts)
+        ? (parsed.facts as Record<string, unknown>)
+        : {};
 
     return {
       isAnimeNews,

@@ -18,7 +18,12 @@ async function judge(event: {
   id: string;
   title: string;
   titleZh: string | null;
-  signals: { title: string; summary: string | null; rawText: string | null; source: { type: string } }[];
+  signals: {
+    title: string;
+    summary: string | null;
+    rawText: string | null;
+    source: { type: string };
+  }[];
 }): Promise<Verdict> {
   const title = event.titleZh ?? event.title;
   // 素材最全的信号作为判定输入（优先带正文的）。
@@ -71,7 +76,9 @@ async function main() {
 
   const offTopic = verdicts.filter((v) => v.offTopic);
   const skipped = verdicts.filter((v) => v.skipped);
-  console.log(`\n重判完成：离题 ${offTopic.length} / 跳过(AI失败) ${skipped.length} / 共 ${verdicts.length}`);
+  console.log(
+    `\n重判完成：离题 ${offTopic.length} / 跳过(AI失败) ${skipped.length} / 共 ${verdicts.length}`,
+  );
 
   if (!APPLY) {
     console.log("(dry-run：未改动。确认无误后用 APPLY=1 再跑一次执行。)");

@@ -38,8 +38,7 @@ function TimeKicker({ ev }: { ev: EventCardData }) {
   const discovered = new Date(ev.firstSeenAt).getTime();
   const published = ev.publishedAt ? new Date(ev.publishedAt).getTime() : null;
   // 雷达感：默认展示「发现」时间；与源发布时间差 >1h 时再补发布时刻
-  const showBoth =
-    published !== null && Math.abs(discovered - published) > 60 * 60 * 1000;
+  const showBoth = published !== null && Math.abs(discovered - published) > 60 * 60 * 1000;
 
   if (showBoth && published !== null) {
     return (
@@ -65,9 +64,7 @@ function Kicker({ ev }: { ev: EventCardData }) {
         </span>
       )}
       {ev.officialConfirmed && (
-        <span className="font-medium text-emerald-600 dark:text-emerald-400">
-          官方
-        </span>
+        <span className="font-medium text-emerald-600 dark:text-emerald-400">官方</span>
       )}
       {ev.status === "draft_ai" && (
         <span className="text-amber-600 dark:text-amber-400">AI 草稿</span>
@@ -181,9 +178,9 @@ export function EventCard({
     );
   }
 
-  const keyFact = buildFactRows(ev.medium, ev.category, ev.facts).find(
-    (r) => "value" in r,
-  ) as { label: string; value: string } | undefined;
+  const keyFact = buildFactRows(ev.medium, ev.category, ev.facts).find((r) => "value" in r) as
+    | { label: string; value: string }
+    | undefined;
 
   return (
     <Link
@@ -196,18 +193,12 @@ export function EventCard({
           {title}
         </h3>
         {ev.summaryZh && (
-          <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
-            {ev.summaryZh}
-          </p>
+          <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">{ev.summaryZh}</p>
         )}
         {keyFact && (
           <p className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs">
-            <span className="shrink-0 font-medium text-primary">
-              {keyFact.label}
-            </span>
-            <span className="truncate text-muted-foreground">
-              {keyFact.value}
-            </span>
+            <span className="shrink-0 font-medium text-primary">{keyFact.label}</span>
+            <span className="truncate text-muted-foreground">{keyFact.value}</span>
           </p>
         )}
       </div>

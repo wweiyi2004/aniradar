@@ -45,7 +45,9 @@ export default async function FetchLogsPage() {
               <TD>{l.newCount}</TD>
               <TD className="max-w-xs truncate text-xs">{l.message}</TD>
               <TD className="text-xs">{new Date(l.startedAt).toLocaleString("zh-CN")}</TD>
-              <TD className="text-xs">{l.endedAt ? new Date(l.endedAt).toLocaleString("zh-CN") : "—"}</TD>
+              <TD className="text-xs">
+                {l.endedAt ? new Date(l.endedAt).toLocaleString("zh-CN") : "—"}
+              </TD>
             </TR>
           ))}
         </TBody>

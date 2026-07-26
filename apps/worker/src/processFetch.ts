@@ -78,12 +78,14 @@ export async function processFetch(data: FetchJobData, ctx?: RetryCtx): Promise<
         newCount++;
       } catch (e: unknown) {
         // 唯一约束冲突 = 重复内容，跳过
-        if (typeof e === "object" && e !== null && (e as { code?: string }).code === "P2002") continue;
+        if (typeof e === "object" && e !== null && (e as { code?: string }).code === "P2002")
+          continue;
         throw e;
       }
     }
 
-    const isHtmlOrDiff = source.fetchStrategy === "html_list" || source.fetchStrategy === "page_diff";
+    const isHtmlOrDiff =
+      source.fetchStrategy === "html_list" || source.fetchStrategy === "page_diff";
     const isFeed = source.fetchStrategy === "rss" || source.fetchStrategy === "youtube_rss";
 
     await prisma.source.update({
@@ -94,7 +96,9 @@ export async function processFetch(data: FetchJobData, ctx?: RetryCtx): Promise<
         failureCount: 0,
         etag: result.etag ?? source.etag,
         // htmlList/pageDiff 用 result.lastModified 回传内容指纹 → 写 lastSeenHash
-        lastSeenHash: isHtmlOrDiff ? (result.lastModified ?? source.lastSeenHash) : source.lastSeenHash,
+        lastSeenHash: isHtmlOrDiff
+          ? (result.lastModified ?? source.lastSeenHash)
+          : source.lastSeenHash,
         // rss/youtube 的 lastModified 是 HTTP 头
         lastModified: isFeed ? (result.lastModified ?? source.lastModified) : source.lastModified,
       },

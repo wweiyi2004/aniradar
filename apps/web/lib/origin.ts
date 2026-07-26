@@ -19,16 +19,11 @@ export function configuredOrigin(): string | undefined {
 export function resolveOrigin(requestHeaders: Headers): string | undefined {
   const configured = configuredOrigin();
   if (configured) return configured;
-  const host = (
-    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host")
-  )
+  const host = (requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"))
     ?.split(",")[0]
     .trim();
   if (!host) return undefined;
-  const forwardedProtocol = requestHeaders
-    .get("x-forwarded-proto")
-    ?.split(",")[0]
-    .trim();
+  const forwardedProtocol = requestHeaders.get("x-forwarded-proto")?.split(",")[0].trim();
   const protocol =
     forwardedProtocol === "http" || forwardedProtocol === "https"
       ? forwardedProtocol

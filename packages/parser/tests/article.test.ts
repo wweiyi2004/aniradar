@@ -51,7 +51,9 @@ describe("extractArticle · 内嵌 YouTube 提取", () => {
     );
   });
   it("article 内正文链接指向 YouTube → videoUrl", () => {
-    const doc = page(`<article><p>${P}</p><a href="https://youtu.be/dQw4w9WgXcQ">PVを見る</a></article>`);
+    const doc = page(
+      `<article><p>${P}</p><a href="https://youtu.be/dQw4w9WgXcQ">PVを見る</a></article>`,
+    );
     expect(extractArticle(doc, "https://example.com/").videoUrl).toBe(
       "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     );
@@ -59,7 +61,9 @@ describe("extractArticle · 内嵌 YouTube 提取", () => {
   it("无 article/main 容器时不取链接（避免页脚频道链接误报），但 iframe 仍可取", () => {
     const docLink = page(`<p>${P}</p><a href="https://youtu.be/dQw4w9WgXcQ">ch</a>`);
     expect(extractArticle(docLink, "https://example.com/").videoUrl).toBeUndefined();
-    const docIframe = page(`<p>${P}</p><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>`);
+    const docIframe = page(
+      `<p>${P}</p><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>`,
+    );
     expect(extractArticle(docIframe, "https://example.com/").videoUrl).toBe(
       "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     );
