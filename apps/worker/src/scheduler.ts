@@ -1,7 +1,7 @@
 import { enqueueJob, jobKeys, prisma } from "@aniradar/db";
 import { env } from "@aniradar/config";
 import { isAiConfigured } from "@aniradar/ai";
-import { backupDatabase, cleanupFetchLogs } from "./maintenance";
+import { backupDatabase, claimDailyRun, cleanupFetchLogs, decayHeatScores } from "./maintenance";
 
 // 维护任务(FetchLog 清理等)幂等且开销小,6 小时一轮足够。
 const MAINTENANCE_INTERVAL_MS = 6 * 60 * 60 * 1000;
@@ -57,6 +57,14 @@ export async function maintenanceTick(): Promise<void> {
     }
   } catch (e) {
     console.error("maintenance: FetchLog 清理失败", e);
+  }
+  try {
+    if (await claimDailyRun("maintenance:heat-decay")) {
+      const touched = await decayHeatScores();
+      console.log(`maintenance: 热度每日衰减完成(${touched} 个事件)`);
+    }
+  } catch (e) {
+    console.error("maintenance: 热度衰减失败", e);
   }
   try {
     const backup = await backupDatabase();

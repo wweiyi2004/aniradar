@@ -2,7 +2,12 @@ import { readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { configureDatabase, prisma } from "@aniradar/db";
-import { backupDatabase, cleanupFetchLogs } from "../src/maintenance";
+import {
+  backupDatabase,
+  claimDailyRun,
+  cleanupFetchLogs,
+  decayHeatScores,
+} from "../src/maintenance";
 
 const TEST_SOURCE_URL = "https://example.com/maintenance-test";
 
@@ -120,5 +125,45 @@ describe.sequential("maintenance: backupDatabase", () => {
     process.env.BACKUP_KEEP = "0";
     const out = await backupDatabase(new Date("2026-07-26T08:00:00Z"), dir);
     expect(out).toBeNull();
+  });
+});
+
+describe.sequential("maintenance: heat decay", () => {
+  const TITLE_PREFIX = "维护测试事件-";
+  const LEASE_NAME = "test:heat-decay";
+
+  beforeEach(async () => {
+    await configureDatabase();
+    await prisma.event.deleteMany({ where: { title: { startsWith: TITLE_PREFIX } } });
+    await prisma.runtimeLease.deleteMany({ where: { name: LEASE_NAME } });
+  });
+
+  afterAll(async () => {
+    await prisma.event.deleteMany({ where: { title: { startsWith: TITLE_PREFIX } } });
+    await prisma.runtimeLease.deleteMany({ where: { name: LEASE_NAME } });
+    await prisma.$disconnect();
+  });
+
+  it("decays scores multiplicatively and zeroes the tail", async () => {
+    const hot = await prisma.event.create({
+      data: { title: `${TITLE_PREFIX}hot`, category: "other", heatScore: 10 },
+    });
+    const faint = await prisma.event.create({
+      data: { title: `${TITLE_PREFIX}faint`, category: "other", heatScore: 0.05 },
+    });
+
+    await decayHeatScores();
+
+    const hotAfter = await prisma.event.findUniqueOrThrow({ where: { id: hot.id } });
+    const faintAfter = await prisma.event.findUniqueOrThrow({ where: { id: faint.id } });
+    expect(hotAfter.heatScore).toBeCloseTo(9, 6);
+    expect(faintAfter.heatScore).toBe(0);
+  });
+
+  it("claimDailyRun fires once per day and again on the next day", async () => {
+    const day1 = new Date("2026-07-26T08:00:00Z");
+    expect(await claimDailyRun(LEASE_NAME, day1)).toBe(true);
+    expect(await claimDailyRun(LEASE_NAME, new Date("2026-07-26T10:00:00Z"))).toBe(false);
+    expect(await claimDailyRun(LEASE_NAME, new Date("2026-07-27T08:00:00Z"))).toBe(true);
   });
 });

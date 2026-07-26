@@ -14,6 +14,12 @@ export async function cleanupFetchLogs(now = new Date()): Promise<number> {
   return result.count;
 }
 
+// 每日衰减系数:热度只增不减会让"热度"排序被历史爆款霸榜,
+// 0.9^7 ≈ 0.48,一周热度减半,排序语义变成"近期热度"。
+const HEAT_DECAY_FACTOR = 0.9;
+// 衰减后低于该值直接归零,避免无限小数长尾。
+const HEAT_FLOOR = 0.05;
+
 function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
@@ -28,6 +34,37 @@ function formatStamp(d: Date): string {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * "每日至多一次"的幂等标记:借 RuntimeLease 表记录 <name, 当天日期戳>,
+ * 抢到(当天首次)返回 true。零 migration,worker 重启不会重复执行。
+ */
+export async function claimDailyRun(name: string, now = new Date()): Promise<boolean> {
+  const day = formatStamp(now).slice(0, 8);
+  const expiresAt = new Date(now.getTime() + DAY_MS);
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.runtimeLease.findUnique({ where: { name } });
+    if (existing?.ownerId === day) return false;
+    await tx.runtimeLease.upsert({
+      where: { name },
+      update: { ownerId: day, expiresAt },
+      create: { name, ownerId: day, expiresAt },
+    });
+    return true;
+  });
+}
+
+/** 全量热度衰减一次(配合 claimDailyRun 每日执行),返回受影响事件数。 */
+export async function decayHeatScores(factor = HEAT_DECAY_FACTOR): Promise<number> {
+  return prisma.$executeRaw`
+    UPDATE "Event"
+    SET heatScore = CASE
+      WHEN heatScore * ${factor} < ${HEAT_FLOOR} THEN 0
+      ELSE heatScore * ${factor}
+    END
+    WHERE heatScore > 0
+  `;
 }
 
 /**
