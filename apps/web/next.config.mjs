@@ -9,7 +9,7 @@ config({ path: resolve(__dirname, "../../.env") });
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["@aniradar/db", "@aniradar/shared", "@aniradar/config"],
-  serverExternalPackages: ["@prisma/client", "bullmq"],
+  serverExternalPackages: ["@prisma/client"],
 };
 
 export default nextConfig;
