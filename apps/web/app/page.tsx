@@ -3,6 +3,7 @@ import { EventCard } from "@/components/event-card";
 import { BoardTabs } from "@/components/board-tabs";
 import { RightRail } from "@/components/right-rail";
 import { getPublicEventStatuses } from "@/lib/public-status";
+import { startOfToday } from "@/lib/today";
 
 export const dynamic = "force-dynamic";
 const SELECT = {
@@ -47,8 +48,7 @@ export default async function Home({
         OR: [{ title: { contains: q } }, { titleZh: { contains: q } }],
       }
     : {};
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const todayStart = startOfToday();
   const hotPublishedSince = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   // 默认不含 draft_ai；PUBLIC_SHOW_DRAFT=true 时可露出草稿。
   const visible = [...getPublicEventStatuses()];
@@ -87,7 +87,7 @@ export default async function Home({
         select: SELECT,
       }),
       prisma.event.count({
-        where: { status: { in: visible }, publishedAt: { gte: startOfToday } },
+        where: { status: { in: visible }, publishedAt: { gte: todayStart } },
       }),
       prisma.source.aggregate({
         where: { enabled: true },

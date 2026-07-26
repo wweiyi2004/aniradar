@@ -4,6 +4,7 @@ import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { AdminNav } from "@/components/admin-nav";
 import { StatusBadge } from "@/components/status-badge";
 import { relTime } from "@/lib/format";
+import { startOfToday } from "@/lib/today";
 import { EventActions } from "./events/event-actions";
 
 export const dynamic = "force-dynamic";
@@ -11,8 +12,7 @@ export const dynamic = "force-dynamic";
 const REVIEW_STATUSES = ["needs_review", "draft_ai"] as const;
 
 export default async function AdminHomePage() {
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const todayStart = startOfToday();
 
   const [queue, reviewCount, todayPublic, failingSources, pendingJobs, failedJobs, workerLease] =
     await Promise.all([
@@ -26,7 +26,7 @@ export default async function AdminHomePage() {
       prisma.event.count({
         where: {
           status: { in: ["published", "auto_published"] },
-          publishedAt: { gte: startOfToday },
+          publishedAt: { gte: todayStart },
         },
       }),
       prisma.source.count({ where: { enabled: true, failureCount: { gt: 0 } } }),
