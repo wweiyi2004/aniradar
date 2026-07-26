@@ -1,6 +1,10 @@
 import { enqueueJob, jobKeys, prisma } from "@aniradar/db";
 import { env } from "@aniradar/config";
 import { isAiConfigured } from "@aniradar/ai";
+import { cleanupFetchLogs } from "./maintenance";
+
+// 维护任务(FetchLog 清理等)幂等且开销小,6 小时一轮足够。
+const MAINTENANCE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 export async function tick(): Promise<void> {
   const now = Date.now();
@@ -45,14 +49,25 @@ export async function reanalyzeTick(): Promise<void> {
   }
 }
 
+export async function maintenanceTick(): Promise<void> {
+  const removed = await cleanupFetchLogs();
+  if (removed > 0) {
+    console.log(`maintenance: 清理 ${removed} 条过期 FetchLog`);
+  }
+}
+
 export function startScheduler(): NodeJS.Timeout[] {
   tick().catch((e) => console.error("scheduler tick error", e));
   reanalyzeTick().catch((e) => console.error("reanalyze tick error", e));
+  maintenanceTick().catch((e) => console.error("maintenance tick error", e));
   const fetchTimer = setInterval(() => {
     tick().catch((e) => console.error("scheduler tick error", e));
   }, env.schedulerIntervalMs);
   const reanalyzeTimer = setInterval(() => {
     reanalyzeTick().catch((e) => console.error("reanalyze tick error", e));
   }, env.reanalyzeIntervalMs);
-  return [fetchTimer, reanalyzeTimer];
+  const maintenanceTimer = setInterval(() => {
+    maintenanceTick().catch((e) => console.error("maintenance tick error", e));
+  }, MAINTENANCE_INTERVAL_MS);
+  return [fetchTimer, reanalyzeTimer, maintenanceTimer];
 }

@@ -51,4 +51,10 @@ export const env = {
   get workerLeaseTtlMs() {
     return numberEnv("WORKER_LEASE_TTL_MS", 30_000, 5000, 300_000);
   },
+  get fetchLogRetentionDays() {
+    return numberEnv("FETCH_LOG_RETENTION_DAYS", 30, 1, 3650);
+  },
+  get backupKeep() {
+    return numberEnv("BACKUP_KEEP", 7, 0, 365);
+  },
 };
