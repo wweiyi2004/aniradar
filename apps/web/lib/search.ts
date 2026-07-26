@@ -4,8 +4,5 @@
  * FTS5 落地后此处继续承担 MATCH 语法字符的清洗职责。
  */
 export function sanitizeSearchQuery(raw: string): string {
-  return raw
-    .replace(/[%_]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return raw.replace(/[%_]/g, " ").replace(/\s+/g, " ").trim();
 }
