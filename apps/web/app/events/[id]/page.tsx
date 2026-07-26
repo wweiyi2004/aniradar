@@ -143,6 +143,7 @@ export default async function EventDetail({
               <img
                 src={ev.imageUrl}
                 alt={ev.titleZh || ev.title}
+                referrerPolicy="no-referrer"
                 className="anime-card w-full rounded-3xl object-cover"
               />
             </figure>

@@ -122,6 +122,7 @@ export function EventCard({
             <img
               src={ev.imageUrl}
               alt=""
+              referrerPolicy="no-referrer"
               className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             />
           ) : (
@@ -152,6 +153,7 @@ export function EventCard({
             <img
               src={ev.imageUrl}
               alt=""
+              referrerPolicy="no-referrer"
               className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
             />
@@ -214,6 +216,7 @@ export function EventCard({
           <img
             src={ev.imageUrl}
             alt=""
+            referrerPolicy="no-referrer"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
