@@ -159,6 +159,8 @@ model Event {
   heatScore         Float         @default(0)
   officialConfirmed Boolean       @default(false)
   status            EventStatus   @default(draft_ai)
+  // 推送水位:可见后被 notifyTick 推送(或标记跳过)的时刻;null = 待推送。
+  notifiedAt        DateTime?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   signals           Signal[]

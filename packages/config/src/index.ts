@@ -57,4 +57,17 @@ export const env = {
   get backupKeep() {
     return numberEnv("BACKUP_KEEP", 7, 0, 365);
   },
+  get publicOrigin() {
+    return process.env.PUBLIC_ORIGIN?.trim() || undefined;
+  },
+  // 新事件推送渠道:两者皆空则推送功能关闭。
+  get notifyWebhookUrl() {
+    return process.env.NOTIFY_WEBHOOK_URL?.trim() || undefined;
+  },
+  get telegramBotToken() {
+    return process.env.TELEGRAM_BOT_TOKEN?.trim() || undefined;
+  },
+  get telegramChatId() {
+    return process.env.TELEGRAM_CHAT_ID?.trim() || undefined;
+  },
 };

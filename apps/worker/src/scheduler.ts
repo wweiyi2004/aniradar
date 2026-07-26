@@ -8,9 +8,12 @@ import {
   decayHeatScores,
   pruneSignalRawText,
 } from "./maintenance";
+import { isNotifyConfigured, notifyTick } from "./notify";
 
 // 维护任务(FetchLog 清理等)幂等且开销小,6 小时一轮足够。
 const MAINTENANCE_INTERVAL_MS = 6 * 60 * 60 * 1000;
+// 新事件推送检查间隔;未配置渠道时 notifyTick 直接返回,零开销。
+const NOTIFY_INTERVAL_MS = 60 * 1000;
 
 export async function tick(): Promise<void> {
   const now = Date.now();
@@ -100,5 +103,15 @@ export function startScheduler(): NodeJS.Timeout[] {
   const maintenanceTimer = setInterval(() => {
     maintenanceTick().catch((e) => console.error("maintenance tick error", e));
   }, MAINTENANCE_INTERVAL_MS);
-  return [fetchTimer, reanalyzeTimer, maintenanceTimer];
+  if (isNotifyConfigured()) {
+    console.log("notify: 推送渠道已配置,新公开事件将自动推送");
+  }
+  const notifyTimer = setInterval(() => {
+    notifyTick()
+      .then(({ sent }) => {
+        if (sent > 0) console.log(`notify: 推送 ${sent} 条新事件`);
+      })
+      .catch((e) => console.error("notify tick error", e));
+  }, NOTIFY_INTERVAL_MS);
+  return [fetchTimer, reanalyzeTimer, maintenanceTimer, notifyTimer];
 }
