@@ -25,6 +25,8 @@ describe.sequential("notify", () => {
   beforeEach(async () => {
     await configureDatabase();
     await prisma.event.deleteMany({ where: { title: { startsWith: TITLE_PREFIX } } });
+    // 将所有残留事件标记为已通知，避免 notifyTick 选中其他测试的数据
+    await prisma.event.updateMany({ where: { notifiedAt: null }, data: { notifiedAt: new Date() } });
     delete process.env.NOTIFY_WEBHOOK_URL;
     delete process.env.TELEGRAM_BOT_TOKEN;
     delete process.env.TELEGRAM_CHAT_ID;

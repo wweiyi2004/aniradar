@@ -16,12 +16,12 @@ describe.sequential("SQLite job queue", () => {
   beforeEach(async () => {
     await configureDatabase();
     await prisma.job.deleteMany();
-    await prisma.runtimeLease.deleteMany();
+    await prisma.runtimeLease.deleteMany({ where: { name: "worker" } });
   });
 
   afterAll(async () => {
     await prisma.job.deleteMany();
-    await prisma.runtimeLease.deleteMany();
+    await prisma.runtimeLease.deleteMany({ where: { name: "worker" } });
     await prisma.$disconnect();
   });
 
