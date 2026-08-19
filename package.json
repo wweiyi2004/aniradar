@@ -28,7 +28,7 @@
     "dotenv-cli": "^7.4.2",
     "dotenv": "^16.4.7",
     "@types/node": "^22.0.0",
-    "concurrently": "^9.2.1"
+    "concurrently": "^10.0.5"
   },
   "packageManager": "pnpm@11.5.2"
 }
