@@ -12,3 +12,4 @@ data/test-backups/
 *.log
 *.tsbuildinfo
 .DS_Store
+.mimocode/
