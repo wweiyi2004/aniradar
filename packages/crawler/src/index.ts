@@ -18,6 +18,8 @@ function blockedAddress(address: string): boolean {
 
 // 在真正建立 TCP 连接时解析并校验全部地址；回调选中的就是已校验地址，避免
 // “先校验域名、连接时再次解析”的 DNS rebinding/TOCTOU 窗口。
+// 调用方要求 options.all 时必须回数组：Node 22 的 autoSelectFamily(Happy Eyeballs)
+// 走该路径，回单地址会触发 ERR_INVALID_IP_ADDRESS。
 const safeLookup: LookupFunction = (hostname, options, callback) => {
   dnsLookup(hostname, { ...options, all: true, verbatim: true }, (error, result) => {
     if (error) return callback(error, "", 0);
@@ -29,6 +31,7 @@ const safeLookup: LookupFunction = (hostname, options, callback) => {
       });
       return callback(e, "", 0);
     }
+    if (options && options.all) return callback(null, addresses);
     const selected = addresses[0];
     if (!selected) return callback(new Error(`DNS returned no address for ${hostname}`), "", 0);
     callback(null, selected.address, selected.family);
