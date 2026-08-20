@@ -54,8 +54,9 @@ export async function composeArticle(input: ComposeInput): Promise<ComposeResult
           `<source index="${i + 1}" name="${s.name.slice(0, 80)}">\n<title>${s.title.slice(0, 500)}</title>\n<body>${(s.text ?? "").slice(0, PER_SOURCE_LIMIT)}</body>\n</source>`,
       ),
     ].join("\n");
-    // 完整翻译比摘要长得多：放宽超时与输出上限（3000 字日文正文 ≈ 3000+ tokens 中文）。
-    const content = await chatJson(cfg, buildSystem(), user, 60_000, 4000);
+    // 完整翻译比摘要长得多：放宽超时与输出上限（3000 字日文正文 ≈ 3000+ tokens 中文；
+    // 推理模型 reasoning 也计入 max_tokens，需更高上限避免 content 被截空）。
+    const content = await chatJson(cfg, buildSystem(), user, 60_000, 8192);
     const parsed = JSON.parse(content) as { bodyZh?: unknown };
     const bodyZh = typeof parsed.bodyZh === "string" ? parsed.bodyZh.trim().slice(0, 20_000) : "";
     if (!bodyZh) return { bodyZh: "", source: "skipped" };

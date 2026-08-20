@@ -27,8 +27,8 @@ export async function chatJson(
   cfg: AiConfig,
   system: string,
   user: string,
-  timeoutMs = 20_000,
-  maxTokens = 900,
+  timeoutMs = 45_000,
+  maxTokens = 4096,
 ): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -56,10 +56,18 @@ export async function chatJson(
       throw new Error(`AI HTTP ${res.status}: ${body.slice(0, 200)}`);
     }
     const data = (await res.json()) as {
-      choices?: { message?: { content?: string } }[];
+      choices?: { message?: { content?: string }; finish_reason?: string | null }[];
     };
     const content = data.choices?.[0]?.message?.content;
-    if (!content) throw new Error("AI empty response");
+    // 推理模型(如 deepseek-v4-flash)可能把 max_tokens 全部耗在 reasoning 上,
+    // content 为空且 finish_reason=length。抛出可识别错误,让上层按瞬时故障重试
+    // 而不是静默降级 mock(实测偶发思考链暴涨,900 上限不够用)。
+    if (!content) {
+      const finish = data.choices?.[0]?.finish_reason;
+      throw new Error(
+        finish === "length" ? "AI truncated by max_tokens" : "AI empty response",
+      );
+    }
     return content;
   } finally {
     clearTimeout(timer);
