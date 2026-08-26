@@ -18,6 +18,6 @@
     "@aniradar/ai": "workspace:*"
   },
   "devDependencies": {
-    "tsx": "^4.19.0"
+    "tsx": "^4.23.12"
   }
 }
